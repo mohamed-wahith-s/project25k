@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSubscription } from '../context/SubscriptionContext';
 import { colleges, courses } from '../data/colleges';
 import { Button, Input, Card, Badge } from '../components/ui';
-import { Search, Filter, MapPin, GraduationCap, Lock, Zap, ArrowRight, Star } from 'lucide-react';
+import CollegeWizard from '../components/CollegeWizard';
+import { Search, MapPin, GraduationCap, Lock, Zap, ArrowRight, Star, X, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,6 +14,7 @@ const CollegeSearch = () => {
   const [results, setResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedCollege, setSelectedCollege] = useState(null);
   const navigate = useNavigate();
 
   const handleSearch = (e) => {
@@ -21,8 +23,7 @@ const CollegeSearch = () => {
 
     setIsSearching(true);
     setHasSearched(true);
-    
-    // Simulate API delay
+
     setTimeout(() => {
       const filtered = colleges.filter(college => {
         const matchesCutoff = cutoff === '' || college.cutoff <= parseFloat(cutoff);
@@ -36,24 +37,26 @@ const CollegeSearch = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+
+      {/* Page Header */}
       <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">TNEA College Finder</h1>
           <p className="text-slate-500 font-medium">Explore top Tamil Nadu engineering colleges based on your cutoff score.</p>
         </div>
         {!isSubscribed && (
-          <Badge variant="premium" className="px-4 py-2 text-sm flex items-center space-x-2 bg-indigo-50 text-indigo-700 border-indigo-100">
+          <Button variant="premium" className="px-4 py-2 text-sm flex items-center space-x-2 shadow-md hover:shadow-lg transition-all" onClick={() => navigate('/subscribe')}>
             <Star size={14} fill="currentColor" />
-            <span>Premium Required for Advanced Search</span>
-          </Badge>
+            <span>Search college with your cutoff</span>
+          </Button>
         )}
       </div>
 
-      {/* Search Header */}
-      <Card className="mb-12 shadow-xl shadow-slate-200/50 relative overflow-hidden">
+      {/* Premium Search (Subscribed only) */}
+      <Card className="mb-6 shadow-xl shadow-slate-200/50 relative overflow-hidden">
         {!isSubscribed && (
           <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] z-20 flex items-center justify-center p-6 text-center">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className="max-w-md bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100"
@@ -61,9 +64,9 @@ const CollegeSearch = () => {
               <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Lock size={32} />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Search is Locked</h2>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Advanced Search is Locked</h2>
               <p className="text-slate-500 mb-8">
-                Subscribe to PathFinder Pro to access our database of over 500+ colleges and detailed admission criteria.
+                Subscribe to PathFinder Pro to search across 500+ colleges with custom cutoff filters.
               </p>
               <Button variant="premium" size="lg" className="w-full" onClick={() => navigate('/subscribe')}>
                 Get Pro Access
@@ -72,7 +75,6 @@ const CollegeSearch = () => {
             </motion.div>
           </div>
         )}
-
         <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-12 gap-4">
           <div className="md:col-span-4">
             <Input
@@ -111,87 +113,148 @@ const CollegeSearch = () => {
         </form>
       </Card>
 
-      {/* Results Section */}
-      <div className="relative min-h-[400px]">
-        <AnimatePresence mode="wait">
-          {isSearching ? (
-            <motion.div 
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            >
-              {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
-            </motion.div>
-          ) : !hasSearched ? (
-            <motion.div 
-              key="initial"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-20 bg-slate-100/50 rounded-[3rem] border-2 border-dashed border-slate-200"
-            >
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-slate-100 text-slate-400">
-                <Filter size={32} />
-              </div>
-              <h2 className="text-xl font-bold text-slate-900">Your results will appear here</h2>
-              <p className="text-slate-500 mt-2">Adjust the filters above to find matching colleges.</p>
-            </motion.div>
-          ) : results.length > 0 ? (
-            <motion.div 
-              key="results"
-              initial="hidden"
-              animate="show"
-              variants={{
-                show: { transition: { staggerChildren: 0.1 } }
-              }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            >
-              {results.map((college) => (
-                <CollegeCard key={college.id} college={college} />
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div 
-              key="empty"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-20"
-            >
-              <div className="w-24 h-24 bg-red-50 text-red-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Search size={40} />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900">No matching colleges found</h2>
-              <p className="text-slate-500 mt-2 max-w-sm mx-auto">Try lowering your cutoff or selecting a different course preference.</p>
-              <Button 
-                variant="secondary" 
-                className="mt-8"
-                onClick={() => { setCutoff(''); setCourse(''); setHasSearched(false); }}
-              >
-                Clear All Filters
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {/* Results (Subscribed search results) */}
+      {isSubscribed && (
+        <div className="relative">
+          <AnimatePresence mode="wait">
+            {isSearching ? (
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
+              </motion.div>
+            ) : hasSearched && results.length > 0 ? (
+              <motion.div key="results" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.1 } } }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {results.map((college) => (
+                  <CollegeCard key={college.id} college={college} onLearnMore={setSelectedCollege} />
+                ))}
+              </motion.div>
+            ) : hasSearched && results.length === 0 ? (
+              <motion.div key="empty" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20">
+                <div className="w-24 h-24 bg-red-50 text-red-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Search size={40} />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900">No matching colleges found</h2>
+                <p className="text-slate-500 mt-2 max-w-sm mx-auto">Try lowering your cutoff or selecting a different course preference.</p>
+                <Button variant="secondary" className="mt-8" onClick={() => { setCutoff(''); setCourse(''); setHasSearched(false); }}>
+                  Clear All Filters
+                </Button>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* ─── FREE ACCESS ─── College Wizard (always visible) */}
+      <div className="pt-2">
+        <CollegeWizard />
       </div>
+
+      {/* College Details Fullscreen View */}
+      <AnimatePresence>
+        {selectedCollege && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed inset-0 z-50 bg-slate-50 overflow-y-auto w-full h-full"
+          >
+            <div className="relative h-64 sm:h-96 w-full">
+              <img src={selectedCollege.image} alt={selectedCollege.name} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
+
+              <div className="absolute top-6 right-6">
+                <button
+                  onClick={() => setSelectedCollege(null)}
+                  className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-slate-900 transition-all shadow-lg"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="absolute bottom-0 left-0 p-8 sm:p-12 w-full">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Badge variant={selectedCollege.type === 'Private' ? 'info' : 'success'} className="bg-white/20 backdrop-blur-md text-white border-white/30">
+                    {selectedCollege.type}
+                  </Badge>
+                  <div className="bg-white/20 backdrop-blur-md px-3 py-1 text-white rounded-xl border border-white/30 flex items-center space-x-1">
+                    <Star size={14} className="text-amber-400 fill-amber-400" />
+                    <span className="text-sm font-bold">{selectedCollege.rating} Rating</span>
+                  </div>
+                </div>
+                <h1 className="text-4xl sm:text-6xl font-black text-white uppercase tracking-tight mb-2 drop-shadow-lg">{selectedCollege.name}</h1>
+                <div className="flex items-center text-slate-200 text-lg font-medium">
+                  <MapPin size={20} className="mr-2" />
+                  {selectedCollege.location}
+                </div>
+              </div>
+            </div>
+
+            <div className="max-w-5xl mx-auto px-4 py-8 sm:px-8 sm:py-12">
+              {selectedCollege.seatDetails ? (
+                <div className="space-y-8">
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center">
+                    <Users className="mr-3 text-primary-500 flex-shrink-0" size={26} />
+                    Course & Seat Matrix
+                  </h3>
+
+                  {selectedCollege.seatDetails.map((seat, idx) => (
+                    <div key={idx} className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
+                      <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-primary-600 to-indigo-600">
+                        <span className="text-white font-black text-lg tracking-tight">{seat.course}</span>
+                        <span className="bg-white/20 text-white text-sm font-bold px-3 py-1 rounded-full border border-white/30">
+                          {seat.totalSeats} Total Seats
+                        </span>
+                      </div>
+                      <div className="w-full">
+                        <div className="grid grid-cols-3 bg-slate-50 border-b border-slate-100 px-5 py-3">
+                          <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Caste</span>
+                          <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Available Seats</span>
+                          <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest text-right">Min. Cutoff</span>
+                        </div>
+                        {Object.entries(seat.availableSeats).map(([caste, seatsCount], rowIdx) => (
+                          <div key={caste} className={`grid grid-cols-3 items-center px-5 py-4 border-b border-slate-50 last:border-0 ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}>
+                            <div>
+                              <span className="inline-block bg-indigo-50 text-indigo-700 text-xs font-black px-3 py-1 rounded-full border border-indigo-100">
+                                {caste}
+                              </span>
+                            </div>
+                            <div className="text-center">
+                              <span className="text-slate-800 font-bold text-base">{seatsCount}</span>
+                              <span className="text-slate-400 text-xs ml-1">seats</span>
+                            </div>
+                            <div className="text-right">
+                              {seat.cutoffs?.[caste] ? (
+                                <span className="inline-block bg-emerald-50 text-emerald-700 font-black text-sm px-3 py-1 rounded-lg border border-emerald-100">
+                                  ≥ {seat.cutoffs[caste]}
+                                </span>
+                              ) : (
+                                <span className="text-slate-300 text-sm">—</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-amber-50 text-amber-700 p-6 rounded-3xl flex items-center text-lg font-medium shadow-sm border border-amber-100">
+                  <Star size={24} className="mr-3 flex-shrink-0" />
+                  Detailed seat matrix is currently being updated for this institution.
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-const CollegeCard = ({ college }) => (
-  <motion.div
-    variants={{
-      hidden: { opacity: 0, y: 20 },
-      show: { opacity: 1, y: 0 }
-    }}
-  >
+const CollegeCard = ({ college, onLearnMore }) => (
+  <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}>
     <Card className="h-full group hover:shadow-2xl hover:shadow-primary-100 transition-all duration-500 hover:-translate-y-2 border-slate-100" noPadding>
       <div className="relative h-48 overflow-hidden rounded-t-[2.5rem]">
-        <img 
-          src={college.image} 
-          alt={college.name} 
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-        />
+        <img src={college.image} alt={college.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
         <div className="absolute top-4 left-4">
           <Badge variant={college.type === 'Private' ? 'info' : 'success'} className="backdrop-blur-md bg-white/90 border-transparent shadow-sm">
             {college.type}
@@ -202,7 +265,6 @@ const CollegeCard = ({ college }) => (
           <span className="text-sm font-bold text-slate-900">{college.rating}</span>
         </div>
       </div>
-      
       <div className="p-8">
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -213,7 +275,6 @@ const CollegeCard = ({ college }) => (
             </div>
           </div>
         </div>
-
         <div className="space-y-4 pt-4 border-t border-slate-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center text-slate-600 font-medium">
@@ -226,8 +287,7 @@ const CollegeCard = ({ college }) => (
             <span className="text-primary-700 font-extrabold text-lg px-3 py-0.5 bg-primary-50 rounded-xl">{college.cutoff}</span>
           </div>
         </div>
-
-        <Button variant="secondary" className="w-full mt-8 group/btn" size="md">
+        <Button variant="secondary" className="w-full mt-8 group/btn" size="md" onClick={() => onLearnMore(college)}>
           Learn More
           <ArrowRight size={16} className="ml-2 group-hover/btn:translate-x-1 transition-transform" />
         </Button>

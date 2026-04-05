@@ -17,7 +17,27 @@ export const colleges = [
     cutoff: 198.0,
     type: "Govt-Aided",
     rating: 4.8,
-    image: "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?q=80&w=800&auto=format&fit=crop"
+    image: "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?q=80&w=800&auto=format&fit=crop",
+    seatDetails: [
+      {
+        course: "ECE",
+        totalSeats: 120,
+        availableSeats: { OC: 37, BC: 32, BCM: 4, MBC: 24, SC: 18, SCA: 4, ST: 1 },
+        cutoffs: { OC: 198.5, BC: 196.0, BCM: 195.5, MBC: 193.0, SC: 185.0, SCA: 178.0, ST: 170.0 }
+      },
+      {
+        course: "CSE",
+        totalSeats: 120,
+        availableSeats: { OC: 35, BC: 30, BCM: 3, MBC: 20, SC: 15, SCA: 3, ST: 1 },
+        cutoffs: { OC: 199.0, BC: 197.5, BCM: 196.0, MBC: 194.5, SC: 188.0, SCA: 180.0, ST: 175.0 }
+      },
+      {
+        course: "Mechanical Engineering",
+        totalSeats: 60,
+        availableSeats: { OC: 18, BC: 16, BCM: 2, MBC: 12, SC: 9, SCA: 2, ST: 1 },
+        cutoffs: { OC: 195.0, BC: 192.5, BCM: 190.0, MBC: 188.0, SC: 175.0, SCA: 165.0, ST: 150.0 }
+      }
+    ]
   },
   {
     id: 3,
