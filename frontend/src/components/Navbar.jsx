@@ -34,22 +34,30 @@ const Navbar = () => {
 
         {/* Navigation Links */}
         <div className="hidden md:flex items-center space-x-8">
-          <NavLink to="/" icon={<Home size={18} />} label="Dashboard" active={isActive('/')} />
+          <NavLink to="/" icon={<Home size={18} />} label="Home" active={isActive('/')} />
           <NavLink to="/search" icon={<Search size={18} />} label="Colleges" active={isActive('/search')} />
+          {isSubscribed && (
+            <NavLink to="/tnea" icon={<GraduationCap size={18} />} label="TNEA Hub" active={isActive('/tnea')} />
+          )}
           {!isSubscribed && (
-            <Link to="/subscribe" className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 font-medium text-sm hover:bg-amber-100 transition-colors">
-              <Star size={14} fill="currentColor" />
-              <span>Upgrade to Pro</span>
-            </Link>
+            <motion.div
+              animate={{ opacity: [1, 0.4, 1], scale: [1, 1.05, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Link to="/subscribe" className="flex items-center space-x-2 px-5 py-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-200 border border-blue-400">
+                <Star size={14} fill="white" />
+                <span>Activate Pro Axis</span>
+              </Link>
+            </motion.div>
           )}
         </div>
 
         {/* User Profile & Actions */}
         <div className="flex items-center space-x-4">
           <div className="flex flex-col items-end mr-2">
-            <span className="text-sm font-semibold text-slate-900">{user.name}</span>
-            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-              {isSubscribed ? 'Pro Member' : 'Free Plan'}
+            <span className="text-sm font-semibold text-slate-900">{user.studentName || user.name || 'User'}</span>
+            <span className={`text-[10px] uppercase tracking-wider font-black ${isSubscribed ? 'text-blue-600' : 'text-slate-500'}`}>
+              {isSubscribed ? 'Pro Member' : 'Normal User'}
             </span>
           </div>
           

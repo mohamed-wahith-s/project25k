@@ -1,0 +1,148 @@
+import React, { useState, useMemo } from 'react';
+import { Search, GraduationCap, Sun, ChevronsUpDown, UserCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import tneaData from '../data/tnea_data.json';
+import SearchSidebar from '../components/SearchSidebar';
+import TNEAResultRow from '../components/TNEAResultRow';
+import { useSubscription } from '../context/SubscriptionContext';
+import { useAuth } from '../context/AuthContext';
+import UnlockProCard from '../components/UnlockProCard';
+import { Badge } from '../components/ui';
+
+const communities = ["OC", "BC", "BCM", "MBC", "SC", "SCA", "ST"];
+
+const TNEADashboard = () => {
+  const { isSubscribed } = useSubscription();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [department, setDepartment] = useState("All");
+
+  const filteredData = useMemo(() => {
+    if (!isSubscribed) return []; // Data hidden for free users
+    
+    let results = [];
+    tneaData.forEach(college => {
+      college.departments.forEach(dept => {
+        const matchesSearch = college.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            college.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            dept.branchName.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesDept = department === "All" || dept.branchName === department;
+        
+        // Premium Logic: Filter by User's Caste and Cutoff
+        const profileCaste = user?.caste || 'OC';
+        const profileCutoff = parseFloat(user?.cutoff || 0);
+        const requiredCutoff = parseFloat(dept.cutoffs[profileCaste] || 0);
+        
+        const isEligible = requiredCutoff > 0 && profileCutoff >= requiredCutoff;
+
+        if (matchesSearch && matchesDept && isEligible) {
+          results.push({ ...college, dept });
+        }
+      });
+    });
+    return results;
+  }, [searchQuery, department, isSubscribed, user]);
+
+  if (!isSubscribed) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-8">
+        <UnlockProCard onUpgrade={() => navigate('/subscribe')} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-700">
+      <DashboardHeader />
+      
+      <div className="flex flex-1 overflow-hidden px-8 py-8 gap-8 max-w-[1600px] mx-auto w-full">
+        <SearchSidebar 
+          selectedCommunities={[user?.caste || 'OC']} 
+          department={department} 
+          setDepartment={setDepartment} 
+          resultsCount={filteredData.length}
+          isSubscribed={true}
+          hideCategory={true}
+        />
+
+        <main className="flex-1 min-w-0 pb-20">
+          <div className="flex flex-col gap-6">
+            <DashboardSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} user={user} />
+            <TableHeader userCaste={user?.caste || 'OC'} />
+            
+            <div className="space-y-3">
+              {filteredData.map((item, idx) => (
+                <TNEAResultRow 
+                  key={`${idx}`} 
+                  college={item} 
+                  dept={item.dept} 
+                  communities={communities} 
+                  selectedCommunities={[user?.caste || 'OC']}
+                  onClick={() => {}}
+                />
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+// Internal Components (< 70 lines)
+const DashboardHeader = () => (
+  <header className="bg-white border-b border-slate-200 px-8 py-3 flex items-center justify-between sticky top-0 z-50">
+    <div className="flex items-center gap-4">
+      <div className="w-12 h-12 bg-[#1e293b] rounded-2xl flex items-center justify-center text-white rotate-[-15deg] shadow-lg">
+        <GraduationCap size={28} />
+      </div>
+      <div>
+        <h1 className="text-sm font-bold text-slate-900 leading-tight">தமிழ்நாடு இன்ஜினியரிங் கல்லூரி சேர்க்கைகள் - தகுதி மதிப்பெண்கள்</h1>
+        <p className="text-[11px] font-medium text-slate-500 uppercase tracking-tight">TAMILNADU ENGINEERING ADMISSIONS CUTOFFS</p>
+      </div>
+    </div>
+    <button className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"><Sun size={18} className="text-slate-400" /></button>
+  </header>
+);
+
+const DashboardSearch = ({ searchQuery, setSearchQuery, user }) => (
+  <div className="flex flex-col gap-4">
+    <div className="bg-slate-900 text-white rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-slate-200 border border-slate-800">
+      <div className="flex items-center gap-5">
+        <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/10"><UserCircle size={28} className="text-blue-400" /></div>
+        <div>
+          <h2 className="text-lg font-black tracking-tight">{user?.studentName} <span className="text-blue-400 ml-2">●</span></h2>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Community: {user?.caste} | Cutoff: {user?.cutoff?.toFixed(2)}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <Badge variant="premium" className="px-4 py-2 bg-blue-600 text-white border-0 font-black tracking-widest">Active Pro Axis</Badge>
+      </div>
+    </div>
+
+    <div className="flex items-center gap-4 bg-white p-2 rounded-[2rem] border border-slate-200 shadow-sm">
+      <div className="relative flex-1">
+        <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input 
+          type="text" 
+          placeholder="Search colleges by name or location or branch . . ."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full py-4 pl-16 text-sm text-slate-600 outline-none font-bold placeholder:text-slate-300"
+        />
+      </div>
+    </div>
+  </div>
+);
+
+const TableHeader = ({ userCaste }) => (
+  <div className="grid grid-cols-[1.5fr_1.5fr_150px] px-6 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest text-left items-center">
+    <span>Institution Details</span>
+    <span>Branch Detail</span>
+    <span className="text-center bg-slate-100 py-1.5 rounded-full text-slate-500">{userCaste} Cutoff / STATUS</span>
+  </div>
+);
+
+export default TNEADashboard;

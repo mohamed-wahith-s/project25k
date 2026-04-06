@@ -1,0 +1,41 @@
+[
+  {
+    "id": "2702",
+    "name": "Bannari Amman Institute of Technology",
+    "code": "2702",
+    "location": "Sathyamangalam, Erode",
+    "minCutoff": 185.5,
+    "departments": [
+      {
+        "branchName": "Artificial Intelligence and Data Science",
+        "code": "AD",
+        "cutoffs": { "OC": 185.5, "BC": 182.0, "BCM": 181.5, "MBC": 178.0, "SC": 165.0, "SCA": 160.0, "ST": 155.0 },
+        "ranks": { "OC": "22791", "BC": "25000", "BCM": "26000", "MBC": "28000", "SC": "35000", "SCA": "40000", "ST": "45000" },
+        "seats": { "OC": "54/54", "BC": "45/45", "BCM": "10/10", "MBC": "35/35", "SC": "15/15", "SCA": "5/5", "ST": "2/2" }
+      },
+      {
+        "branchName": "Computer Science and Engineering",
+        "code": "CS",
+        "cutoffs": { "OC": 192.5, "BC": 190.0, "BCM": 189.5, "MBC": 187.0, "SC": 175.0, "SCA": 170.0, "ST": 165.0 },
+        "ranks": { "OC": "12000", "BC": "14000", "BCM": "15000", "MBC": "18000", "SC": "25000", "SCA": "30000", "ST": "35000" },
+        "seats": { "OC": "60/60", "BC": "50/50", "BCM": "12/12", "MBC": "40/40", "SC": "20/20", "SCA": "8/8", "ST": "4/4" }
+      }
+    ]
+  },
+  {
+    "id": "2006",
+    "name": "PSG College of Technology",
+    "code": "2006",
+    "location": "Coimbatore",
+    "minCutoff": 195.0,
+    "departments": [
+      {
+        "branchName": "Computer Science and Engineering",
+        "code": "CS",
+        "cutoffs": { "OC": 199.5, "BC": 198.5, "BCM": 198.0, "MBC": 197.5, "SC": 190.0, "SCA": 188.0, "ST": 185.0 },
+        "ranks": { "OC": "500", "BC": "800", "BCM": "1000", "MBC": "1500", "SC": "5000", "SCA": "7000", "ST": "10000" },
+        "seats": { "OC": "60/60", "BC": "50/50", "BCM": "12/12", "MBC": "40/40", "SC": "20/20", "SCA": "8/8", "ST": "4/4" }
+      }
+    ]
+  }
+]
