@@ -34,7 +34,12 @@ const SignupPage = () => {
     setError('');
     setIsLoading(true);
     try {
-      await signup(formData);
+      await signup({
+        name: formData.username,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password
+      });
       navigate('/');
     } catch (err) {
       setError(err.message || 'Something went wrong');

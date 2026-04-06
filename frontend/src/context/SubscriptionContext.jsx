@@ -8,15 +8,8 @@ export const SubscriptionProvider = ({ children }) => {
   const isSubscribed = !!user?.isSubscribed;
   const [loading, setLoading] = useState(false);
 
-  // We no longer need the local useEffect since isSubscribed is derived from the user object.
-
-  const subscribe = (planId, metadata = {}) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        updateUser({ isSubscribed: true, ...metadata });
-        resolve();
-      }, 1500);
-    });
+  const subscribe = (data) => {
+    updateUser({ isSubscribed: true, ...data });
   };
 
   const unsubscribe = () => {

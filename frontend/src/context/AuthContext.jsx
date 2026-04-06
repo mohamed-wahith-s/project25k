@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,50 +16,51 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (identifier, password) => {
-    // Simulated login
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (identifier && password) {
-          const newUser = { 
-            email: identifier.includes('@') ? identifier : `${identifier}@example.com`,
-            name: identifier.split('@')[0],
-            phone: !identifier.includes('@') ? identifier : '',
-            isSubscribed: false
-          };
-          setUser(newUser);
-          localStorage.setItem('user', JSON.stringify(newUser));
-          localStorage.removeItem('isSubscribed'); // Clear old global flag
-          resolve(newUser);
-        } else {
-          reject(new Error('Invalid credentials'));
-        }
-      }, 1000);
-    });
+  const login = async (identifier, password) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password }),
+      });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+      
+      setUser(data);
+      localStorage.setItem('user', JSON.stringify(data));
+      return data;
+    } catch (error) {
+      throw error;
+    }
   };
 
-  const signup = (userData) => {
-    // Simulated signup
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const { username, email, phone, password } = userData;
-        if (username && email && phone && password) {
-          const newUser = { username, email, phone, name: username, isSubscribed: false };
-          setUser(newUser);
-          localStorage.setItem('user', JSON.stringify(newUser));
-          localStorage.removeItem('isSubscribed'); // Clear old global flag
-          resolve(newUser);
-        } else {
-          reject(new Error('Please fill in all fields'));
-        }
-      }, 1000);
-    });
+  const signup = async (userData) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Signup failed');
+      }
+
+      setUser(data);
+      localStorage.setItem('user', JSON.stringify(data));
+      return data;
+    } catch (error) {
+      throw error;
+    }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
-    localStorage.removeItem('isSubscribed');
   };
 
   const updateUser = (data) => {

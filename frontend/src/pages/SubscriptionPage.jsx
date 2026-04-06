@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useAuth } from '../context/AuthContext';
 import { Button, Card, Badge, Input } from '../components/ui';
 import { Check, Star, Zap, Shield, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { loadRazorpayScript } from '../utils/razorpayUtils';
 
 const SubscriptionPage = () => {
   const { subscribe, isSubscribed } = useSubscription();
+  const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [showMetadataForm, setShowMetadataForm] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
+  const [selectedPlanAmount, setSelectedPlanAmount] = useState(0);
   const [metadata, setMetadata] = useState({
     marks: '',
     cutoff: '',
@@ -19,8 +23,11 @@ const SubscriptionPage = () => {
   });
   const navigate = useNavigate();
 
-  const handlePlanSelect = (planId) => {
+  const handlePlanSelect = (planId, priceString) => {
     setSelectedPlanId(planId);
+    // extract amount from price string, e.g. "$29.90" -> 29.90 -> 2990 INR for testing
+    const amount = parseFloat(priceString.replace('$', '')) * 80;
+    setSelectedPlanAmount(Math.round(amount));
     setShowMetadataForm(true);
   };
 
@@ -38,8 +45,88 @@ const SubscriptionPage = () => {
     
     setLoadingPlan(selectedPlanId);
     try {
-      await subscribe(selectedPlanId, metadata);
-      navigate('/search');
+      const res = await loadRazorpayScript();
+      if (!res) {
+        alert('Razorpay SDK failed to load. Are you online?');
+        setLoadingPlan(null);
+        return;
+      }
+
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      
+      // 1. Create Order
+      const orderResponse = await fetch(`${API_URL}/payment/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
+        body: JSON.stringify({
+          planId: selectedPlanId,
+          amount: selectedPlanAmount,
+          metadata
+        })
+      });
+      const orderData = await orderResponse.json();
+
+      if (!orderResponse.ok) {
+        throw new Error(orderData.error || orderData.message || 'Failed to create order');
+      }
+
+      // 2. Initialize Razorpay
+      const options = {
+        key: orderData.key_id, // Fetch dynamic key passed from backend
+        amount: orderData.order.amount,
+        currency: orderData.order.currency,
+        name: 'College Diaries',
+        description: 'Premium Subscription',
+        order_id: orderData.order.id,
+        handler: async function (response) {
+          try {
+            // 3. Verify Payment
+            const verifyRes = await fetch(`${API_URL}/payment/verify`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${user.token}`
+              },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                planId: selectedPlanId,
+                metadata
+              })
+            });
+            const verifyData = await verifyRes.json();
+            
+            if (verifyRes.ok) {
+              subscribe({ subscriptionPlan: selectedPlanId, subscriptionMetadata: metadata });
+              navigate('/search');
+            } else {
+              alert('Payment Verification Failed!');
+            }
+          } catch (error) {
+            console.error(error);
+            alert('Something went wrong during verification');
+          }
+        },
+        prefill: {
+          name: user.name,
+          email: user.email,
+          contact: user.phone || '9999999999'
+        },
+        theme: {
+          color: '#4f46e5'
+        }
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+
+    } catch (err) {
+      console.error('Detailed Error initiating payment:', err);
+      alert(`Error initiating payment: ${err.message || 'Check console for details'}`);
     } finally {
       setLoadingPlan(null);
       setShowMetadataForm(false);
@@ -288,7 +375,7 @@ const SubscriptionPage = () => {
                   className="w-full py-4 text-lg font-bold"
                   size="xl"
                   isLoading={loadingPlan === plan.id}
-                  onClick={() => handlePlanSelect(plan.id)}
+                  onClick={() => handlePlanSelect(plan.id, plan.price)}
                 >
                   {plan.recommended ? 'Subscribe Now' : 'Choose Plan'}
                 </Button>
