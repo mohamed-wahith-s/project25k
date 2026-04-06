@@ -1,23 +1,29 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../db');
 
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  phone: { type: String },
-  password: { type: String, required: true },
-  isSubscribed: { type: Boolean, default: false },
-  subscriptionMetadata: {
-    marks: String,
-    cutoff: String,
-    counselingRank: String,
-    caste: String,
-    religion: String,
-    address: String,
-    dateOfBirth: String,
-    alternatePhone: String
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
-  subscriptionPlan: { type: String },
-  paymentId: { type: String }
-}, { timestamps: true });
+  username: { type: DataTypes.STRING, unique: true, allowNull: false },
+  email: { type: DataTypes.STRING, unique: true, allowNull: false },
+  password: { type: DataTypes.STRING, allowNull: false },
+  
+  // Student Details
+  studentName: { type: DataTypes.STRING },
+  phone: { type: DataTypes.STRING },
+  physics: { type: DataTypes.FLOAT },
+  chemistry: { type: DataTypes.FLOAT },
+  maths: { type: DataTypes.FLOAT },
+  caste: { type: DataTypes.STRING },
+  cutoff: { type: DataTypes.FLOAT },
+  
+  // Subscription status
+  isSubscribed: { type: DataTypes.BOOLEAN, defaultValue: false }
+}, {
+  timestamps: true
+});
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = User;

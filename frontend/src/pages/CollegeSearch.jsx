@@ -1,320 +1,125 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSubscription } from '../context/SubscriptionContext';
-import { colleges, courses } from '../data/colleges';
-import { Button, Input, Card, Badge } from '../components/ui';
-import CollegeWizard from '../components/CollegeWizard';
-import { Search, MapPin, GraduationCap, Lock, Zap, ArrowRight, Star, X, Users } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Download, ChevronsUpDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import tneaData from '../data/tnea_data.json';
+import { topColleges } from '../data/topColleges';
+import TNEAResultRow from '../components/TNEAResultRow';
+import UnlockProCard from '../components/UnlockProCard';
+
+const communities = ["OC", "BC", "BCM", "MBC", "SC", "SCA", "ST"];
 
 const CollegeSearch = () => {
   const { isSubscribed } = useSubscription();
-  const [cutoff, setCutoff] = useState('');
-  const [course, setCourse] = useState('');
-  const [results, setResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [selectedCollege, setSelectedCollege] = useState(null);
   const navigate = useNavigate();
+  const [selectedCommunities, setSelectedCommunities] = useState(["OC"]);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (!isSubscribed) return;
-
-    setIsSearching(true);
-    setHasSearched(true);
-
-    setTimeout(() => {
-      const filtered = colleges.filter(college => {
-        const matchesCutoff = cutoff === '' || college.cutoff <= parseFloat(cutoff);
-        const matchesCourse = course === '' || college.course === course;
-        return matchesCutoff && matchesCourse;
+  const filteredData = useMemo(() => {
+    let rawResults = [];
+    
+    if (isSubscribed) {
+      tneaData.forEach(college => {
+        college.departments.forEach(dept => {
+          rawResults.push({ ...college, dept });
+        });
       });
-      setResults(filtered);
-      setIsSearching(false);
-    }, 800);
-  };
+    } else {
+      // Free Axis: Map Top Colleges to TNEA format
+      topColleges.forEach(college => {
+        college.courses?.forEach(course => {
+          const cutoffs = {};
+          communities.forEach(c => {
+            const raw = course.casteSeats?.[c]?.cutoff || "-";
+            cutoffs[c] = raw.replace(/[^0-9.]/g, '') || raw;
+          });
+          
+          rawResults.push({
+            id: college.id,
+            name: college.name,
+            location: college.city,
+            dept: {
+              branchName: course.name,
+              code: "VERIFIED",
+              cutoffs: cutoffs
+            }
+          });
+        });
+      });
+    }
+
+    const filtered = rawResults.filter(item => 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      item.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.dept.branchName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return isSubscribed ? filtered : filtered.slice(0, 20);
+  }, [searchQuery, isSubscribed]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-
-      {/* Page Header */}
-      <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">TNEA College Finder</h1>
-          <p className="text-slate-500 font-medium">Explore top Tamil Nadu engineering colleges based on your cutoff score.</p>
-        </div>
-        {!isSubscribed && (
-          <Button variant="premium" className="px-4 py-2 text-sm flex items-center space-x-2 shadow-md hover:shadow-lg transition-all" onClick={() => navigate('/subscribe')}>
-            <Star size={14} fill="currentColor" />
-            <span>Search college with your cutoff</span>
-          </Button>
-        )}
-      </div>
-
-      {/* Premium Search (Subscribed only) */}
-      <Card className="mb-6 shadow-xl shadow-slate-200/50 relative overflow-hidden">
-        {!isSubscribed && (
-          <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] z-20 flex items-center justify-center p-6 text-center">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="max-w-md bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100"
-            >
-              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Lock size={32} />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Advanced Search is Locked</h2>
-              <p className="text-slate-500 mb-8">
-                Subscribe to PathFinder Pro to search across 500+ colleges with custom cutoff filters.
-              </p>
-              <Button variant="premium" size="lg" className="w-full" onClick={() => navigate('/subscribe')}>
-                Get Pro Access
-                <Zap size={18} className="ml-2" />
-              </Button>
-            </motion.div>
-          </div>
-        )}
-        <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div className="md:col-span-4">
-            <Input
-              label="Your TNEA Cutoff Score"
-              type="number"
-              step="0.01"
-              placeholder="e.g. 195.5"
-              value={cutoff}
-              onChange={(e) => setCutoff(e.target.value)}
-              disabled={!isSubscribed}
-            />
-          </div>
-          <div className="md:col-span-5">
-            <label className="text-sm font-medium text-slate-700 ml-1 block mb-1.5">Select Preferred Course</label>
-            <select
-              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all disabled:bg-slate-50 text-slate-700"
-              value={course}
-              onChange={(e) => setCourse(e.target.value)}
-              disabled={!isSubscribed}
-            >
-              <option value="">All Courses</option>
-              {courses.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div className="md:col-span-3 flex items-end">
-            <Button
-              type="submit"
-              className="w-full py-[11px]"
-              disabled={!isSubscribed || isSearching}
-              isLoading={isSearching}
-            >
-              <Search size={20} className="mr-2" />
-              Search Colleges
-            </Button>
-          </div>
-        </form>
-      </Card>
-
-      {/* Results (Subscribed search results) */}
-      {isSubscribed && (
-        <div className="relative">
-          <AnimatePresence mode="wait">
-            {isSearching ? (
-              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
-              </motion.div>
-            ) : hasSearched && results.length > 0 ? (
-              <motion.div key="results" initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.1 } } }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {results.map((college) => (
-                  <CollegeCard key={college.id} college={college} onLearnMore={setSelectedCollege} />
-                ))}
-              </motion.div>
-            ) : hasSearched && results.length === 0 ? (
-              <motion.div key="empty" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20">
-                <div className="w-24 h-24 bg-red-50 text-red-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Search size={40} />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">No matching colleges found</h2>
-                <p className="text-slate-500 mt-2 max-w-sm mx-auto">Try lowering your cutoff or selecting a different course preference.</p>
-                <Button variant="secondary" className="mt-8" onClick={() => { setCutoff(''); setCourse(''); setHasSearched(false); }}>
-                  Clear All Filters
-                </Button>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-        </div>
-      )}
-
-      {/* ─── FREE ACCESS ─── College Wizard (always visible) */}
-      <div className="pt-2">
-        <CollegeWizard />
-      </div>
-
-      {/* College Details Fullscreen View */}
-      <AnimatePresence>
-        {selectedCollege && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed inset-0 z-50 bg-slate-50 overflow-y-auto w-full h-full"
-          >
-            <div className="relative h-64 sm:h-96 w-full">
-              <img src={selectedCollege.image} alt={selectedCollege.name} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
-
-              <div className="absolute top-6 right-6">
-                <button
-                  onClick={() => setSelectedCollege(null)}
-                  className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-slate-900 transition-all shadow-lg"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="absolute bottom-0 left-0 p-8 sm:p-12 w-full">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Badge variant={selectedCollege.type === 'Private' ? 'info' : 'success'} className="bg-white/20 backdrop-blur-md text-white border-white/30">
-                    {selectedCollege.type}
-                  </Badge>
-                  <div className="bg-white/20 backdrop-blur-md px-3 py-1 text-white rounded-xl border border-white/30 flex items-center space-x-1">
-                    <Star size={14} className="text-amber-400 fill-amber-400" />
-                    <span className="text-sm font-bold">{selectedCollege.rating} Rating</span>
-                  </div>
-                </div>
-                <h1 className="text-4xl sm:text-6xl font-black text-white uppercase tracking-tight mb-2 drop-shadow-lg">{selectedCollege.name}</h1>
-                <div className="flex items-center text-slate-200 text-lg font-medium">
-                  <MapPin size={20} className="mr-2" />
-                  {selectedCollege.location}
-                </div>
-              </div>
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-700">
+      <div className="flex flex-1 flex-col px-8 py-8 gap-8 max-w-[1200px] mx-auto w-full">
+        <main className="flex-1 min-w-0">
+          <div className="flex flex-col gap-8">
+            <div className="mb-4 text-center">
+              <h1 className="text-4xl font-black text-slate-900 mb-2">Find Your College</h1>
+              <p className="text-slate-500 font-medium tracking-tight">Search among 500+ Engineering institutions across Tamil Nadu.</p>
             </div>
+            
+            <SearchHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+            <TableHeader communities={communities} />
 
-            <div className="max-w-5xl mx-auto px-4 py-8 sm:px-8 sm:py-12">
-              {selectedCollege.seatDetails ? (
-                <div className="space-y-8">
-                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center">
-                    <Users className="mr-3 text-primary-500 flex-shrink-0" size={26} />
-                    Course & Seat Matrix
-                  </h3>
+            <div className="space-y-3 pb-20">
+              {filteredData.map((item, idx) => (
+                <TNEAResultRow 
+                  key={`${item.id}-${idx}`} 
+                  college={item} 
+                  dept={item.dept} 
+                  communities={communities} 
+                  selectedCommunities={selectedCommunities}
+                  onClick={() => !isSubscribed && navigate('/subscribe')}
+                />
+              ))}
 
-                  {selectedCollege.seatDetails.map((seat, idx) => (
-                    <div key={idx} className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
-                      <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-primary-600 to-indigo-600">
-                        <span className="text-white font-black text-lg tracking-tight">{seat.course}</span>
-                        <span className="bg-white/20 text-white text-sm font-bold px-3 py-1 rounded-full border border-white/30">
-                          {seat.totalSeats} Total Seats
-                        </span>
-                      </div>
-                      <div className="w-full">
-                        <div className="grid grid-cols-3 bg-slate-50 border-b border-slate-100 px-5 py-3">
-                          <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Caste</span>
-                          <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Available Seats</span>
-                          <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest text-right">Min. Cutoff</span>
-                        </div>
-                        {Object.entries(seat.availableSeats).map(([caste, seatsCount], rowIdx) => (
-                          <div key={caste} className={`grid grid-cols-3 items-center px-5 py-4 border-b border-slate-50 last:border-0 ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}>
-                            <div>
-                              <span className="inline-block bg-indigo-50 text-indigo-700 text-xs font-black px-3 py-1 rounded-full border border-indigo-100">
-                                {caste}
-                              </span>
-                            </div>
-                            <div className="text-center">
-                              <span className="text-slate-800 font-bold text-base">{seatsCount}</span>
-                              <span className="text-slate-400 text-xs ml-1">seats</span>
-                            </div>
-                            <div className="text-right">
-                              {seat.cutoffs?.[caste] ? (
-                                <span className="inline-block bg-emerald-50 text-emerald-700 font-black text-sm px-3 py-1 rounded-lg border border-emerald-100">
-                                  ≥ {seat.cutoffs[caste]}
-                                </span>
-                              ) : (
-                                <span className="text-slate-300 text-sm">—</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-amber-50 text-amber-700 p-6 rounded-3xl flex items-center text-lg font-medium shadow-sm border border-amber-100">
-                  <Star size={24} className="mr-3 flex-shrink-0" />
-                  Detailed seat matrix is currently being updated for this institution.
-                </div>
-              )}
+              {!isSubscribed && <UnlockProCard onUpgrade={() => navigate('/subscribe')} />}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
 
-const CollegeCard = ({ college, onLearnMore }) => (
-  <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}>
-    <Card className="h-full group hover:shadow-2xl hover:shadow-primary-100 transition-all duration-500 hover:-translate-y-2 border-slate-100" noPadding>
-      <div className="relative h-48 overflow-hidden rounded-t-[2.5rem]">
-        <img src={college.image} alt={college.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-        <div className="absolute top-4 left-4">
-          <Badge variant={college.type === 'Private' ? 'info' : 'success'} className="backdrop-blur-md bg-white/90 border-transparent shadow-sm">
-            {college.type}
-          </Badge>
-        </div>
-        <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-lg border border-white/20 flex items-center space-x-1">
-          <Star size={14} className="text-amber-500 fill-amber-500" />
-          <span className="text-sm font-bold text-slate-900">{college.rating}</span>
-        </div>
-      </div>
-      <div className="p-8">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h3 className="text-xl font-bold text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">{college.name}</h3>
-            <div className="flex items-center text-slate-500 text-sm mt-1">
-              <MapPin size={14} className="mr-1" />
-              {college.location}
-            </div>
-          </div>
-        </div>
-        <div className="space-y-4 pt-4 border-t border-slate-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center text-slate-600 font-medium">
-              <GraduationCap size={18} className="mr-2 text-primary-500" />
-              <span>{college.course}</span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-500 uppercase tracking-wider font-bold text-[10px]">TNEA Cutoff</span>
-            <span className="text-primary-700 font-extrabold text-lg px-3 py-0.5 bg-primary-50 rounded-xl">{college.cutoff}</span>
-          </div>
-        </div>
-        <Button variant="secondary" className="w-full mt-8 group/btn" size="md" onClick={() => onLearnMore(college)}>
-          Learn More
-          <ArrowRight size={16} className="ml-2 group-hover/btn:translate-x-1 transition-transform" />
-        </Button>
-      </div>
-    </Card>
-  </motion.div>
+// Internal Sub-Components (Keep each under 70 lines)
+const SearchHeader = ({ searchQuery, setSearchQuery }) => (
+  <div className="flex items-center gap-4 bg-white p-2 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-100 pr-6">
+    <div className="relative flex-1">
+      <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
+      <input 
+        type="text" 
+        placeholder="Course, city, college or code . . ."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="w-full py-4 pl-16 pr-6 text-sm text-slate-600 outline-none font-bold placeholder:text-slate-300 bg-transparent"
+      />
+    </div>
+  </div>
 );
 
-const SkeletonCard = () => (
-  <Card className="h-[480px] border-slate-100 animate-pulse bg-slate-50" noPadding>
-    <div className="h-48 bg-slate-200 rounded-t-[2.5rem]"></div>
-    <div className="p-8 space-y-6">
-      <div className="space-y-3">
-        <div className="h-6 bg-slate-200 rounded-full w-3/4"></div>
-        <div className="h-4 bg-slate-200 rounded-full w-1/2"></div>
-      </div>
-      <div className="h-px bg-slate-100 w-full"></div>
-      <div className="space-y-4">
-        <div className="h-5 bg-slate-200 rounded-full w-full"></div>
-        <div className="flex justify-between">
-          <div className="h-4 bg-slate-200 rounded-full w-1/4"></div>
-          <div className="h-8 bg-slate-200 rounded-xl w-1/4"></div>
-        </div>
-      </div>
-      <div className="h-12 bg-slate-200 rounded-xl w-full mt-4"></div>
-    </div>
-  </Card>
+const TableHeader = ({ communities }) => (
+  <div className="grid grid-cols-[1.5fr_1.5fr_repeat(7,60px)] px-6 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center items-center">
+    <HeaderItem label="Institution" />
+    <HeaderItem label="Branch Detail" />
+    {communities.map(comm => <HeaderItem key={comm} label={comm} />)}
+  </div>
+);
+
+const HeaderItem = ({ label }) => (
+  <div className="flex items-center justify-center gap-1.5 cursor-pointer hover:text-slate-600 transition-colors group">
+    <span>{label}</span>
+    <ChevronsUpDown size={10} className="group-hover:text-blue-500" />
+  </div>
 );
 
 export default CollegeSearch;

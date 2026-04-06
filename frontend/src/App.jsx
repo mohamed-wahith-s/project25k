@@ -1,14 +1,16 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { SubscriptionProvider } from './context/SubscriptionContext';
+import { AuthProvider } from './context/AuthProvider';
+import { useAuth } from './context/AuthContext';
+import { SubscriptionProvider } from './context/SubscriptionProvider';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import Dashboard from './pages/Dashboard';
-import SubscriptionPage from './pages/SubscriptionPage';
+import ProfilePage from './pages/ProfilePage';
 import CollegeSearch from './pages/CollegeSearch';
+import TNEADashboard from './pages/TNEADashboard';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -29,7 +31,7 @@ const App = () => {
     <AuthProvider>
       <SubscriptionProvider>
         <Router>
-          <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+          <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-blue-100">
             <Navbar />
             <main className="flex-1">
               <Routes>
@@ -44,13 +46,19 @@ const App = () => {
                 
                 <Route path="/subscribe" element={
                   <ProtectedRoute>
-                    <SubscriptionPage />
+                    <ProfilePage />
                   </ProtectedRoute>
                 } />
                 
                 <Route path="/search" element={
                   <ProtectedRoute>
                     <CollegeSearch />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/tnea" element={
+                  <ProtectedRoute>
+                    <TNEADashboard />
                   </ProtectedRoute>
                 } />
               </Routes>
