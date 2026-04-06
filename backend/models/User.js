@@ -11,7 +11,10 @@ const userSchema = new mongoose.Schema({
     cutoff: String,
     counselingRank: String,
     caste: String,
-    religion: String
+    religion: String,
+    address: String,
+    dateOfBirth: String,
+    alternatePhone: String
   },
   subscriptionPlan: { type: String },
   paymentId: { type: String }

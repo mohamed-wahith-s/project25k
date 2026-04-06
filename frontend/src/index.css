@@ -4,17 +4,19 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900;
+    @apply text-slate-900;
+    background: radial-gradient(circle at top left, #F8FAFC, #EFF3F8 100%);
+    min-height: 100vh;
   }
 }
 
 @layer components {
   .glass {
-    @apply bg-white/70 backdrop-blur-md border border-white/20;
+    @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_0_rgba(100,100,111,0.1)];
   }
   
   .premium-gradient {
-    @apply bg-gradient-to-br from-primary-600 via-primary-700 to-indigo-800;
+    @apply bg-gradient-to-br from-[#6246EA] via-[#9B8BF7] to-[#4228C6];
   }
   
   .card-hover {

@@ -1,15 +1,61 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import { Button, Card, Badge } from '../components/ui';
-import { Search, Compass, BookOpen, MessageCircle, Star, ArrowRight, Zap, GraduationCap, Shield, Sparkles } from 'lucide-react';
+import { Button, Card, Badge, Input } from '../components/ui';
+import { Search, Compass, BookOpen, MessageCircle, Star, ArrowRight, Zap, GraduationCap, Shield, Sparkles, Edit2, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { isSubscribed } = useSubscription();
   const navigate = useNavigate();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    marks: user?.subscriptionMetadata?.marks || user?.marks || '',
+    cutoff: user?.subscriptionMetadata?.cutoff || user?.cutoff || '',
+    counselingRank: user?.subscriptionMetadata?.counselingRank || user?.counselingRank || '',
+    caste: user?.subscriptionMetadata?.caste || user?.caste || '',
+    religion: user?.subscriptionMetadata?.religion || user?.religion || '',
+    address: user?.subscriptionMetadata?.address || '',
+    dateOfBirth: user?.subscriptionMetadata?.dateOfBirth || '',
+    alternatePhone: user?.subscriptionMetadata?.alternatePhone || ''
+  });
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const config = {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ metadata: editForm }),
+      };
+
+      const res = await fetch(`${API_URL}/auth/profile`, config);
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.message || 'Update failed');
+
+      updateUser(data);
+      setIsEditing(false);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const container = {
     hidden: { opacity: 0 },
@@ -59,22 +105,27 @@ const Dashboard = () => {
               <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                 <BookOpen size={120} />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center">
-                <GraduationCap className="mr-2 text-primary-600" size={20} />
-                Academic Profile
-              </h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-slate-900 flex items-center">
+                  <GraduationCap className="mr-2 text-primary-600" size={20} />
+                  Academic Profile
+                </h3>
+                <button onClick={() => setIsEditing(true)} className="text-primary-600 hover:text-primary-800 text-sm font-bold flex items-center bg-primary-50 px-3 py-1.5 rounded-lg transition-colors">
+                  <Edit2 size={14} className="mr-1.5" /> Edit
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Standard Marks</p>
-                  <p className="text-2xl font-black text-slate-900">{user?.marks}%</p>
+                  <p className="text-2xl font-black text-slate-900">{user?.subscriptionMetadata?.marks || user?.marks}%</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">TNEA Cutoff</p>
-                  <p className="text-2xl font-black text-primary-600">{user?.cutoff}</p>
+                  <p className="text-2xl font-black text-primary-600">{user?.subscriptionMetadata?.cutoff || user?.cutoff}</p>
                 </div>
                 <div className="col-span-2 bg-primary-50 px-4 py-3 rounded-2xl mt-2">
                   <p className="text-[10px] font-black text-primary-400 uppercase tracking-[0.2em] mb-1">Counseling Rank</p>
-                  <p className="text-2xl font-black text-primary-700">#{user?.counselingRank}</p>
+                  <p className="text-2xl font-black text-primary-700">#{user?.subscriptionMetadata?.counselingRank || user?.counselingRank || 'N/A'}</p>
                 </div>
               </div>
                 <div className="pt-4 border-t border-slate-50">
@@ -94,15 +145,15 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 p-4 rounded-2xl">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Category</p>
-                  <p className="text-xl font-black text-slate-900">{user?.caste}</p>
+                  <p className="text-xl font-black text-slate-900">{user?.subscriptionMetadata?.caste || user?.caste}</p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Religion</p>
-                  <p className="text-xl font-black text-slate-900">{user?.religion}</p>
+                  <p className="text-xl font-black text-slate-900">{user?.subscriptionMetadata?.religion || user?.religion}</p>
                 </div>
               </div>
               <p className="mt-6 text-sm text-slate-500 leading-relaxed italic">
-                * Your cutoff benefits are calculated based on {user?.caste} category reservation rules.
+                * Your cutoff benefits are calculated based on {user?.subscriptionMetadata?.caste || user?.caste} category reservation rules.
               </p>
             </Card>
           </motion.div>
@@ -146,6 +197,66 @@ const Dashboard = () => {
             locked={false}
           />
         </div>
+        {/* Edit Modal */}
+        {isEditing && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+            >
+              <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h2 className="text-2xl font-bold text-slate-900">Edit Profile</h2>
+                <button onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-slate-600 w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-8 overflow-y-auto">
+                <form id="profile-edit-form" onSubmit={handleUpdateProfile} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Input label="12th Standard Marks (%)" name="marks" type="number" step="0.01" value={editForm.marks} onChange={handleEditChange} required />
+                    <Input label="TNEA Cutoff (out of 200)" name="cutoff" type="number" step="0.01" value={editForm.cutoff} onChange={handleEditChange} required />
+                    <Input label="TNEA Counseling Rank (Optional)" name="counselingRank" type="number" value={editForm.counselingRank || ''} onChange={handleEditChange} />
+                    <Input label="Date of Birth" name="dateOfBirth" type="date" value={editForm.dateOfBirth || ''} onChange={handleEditChange} required />
+                    <div className="col-span-1 md:col-span-2">
+                       <Input label="Full Address" name="address" type="text" value={editForm.address || ''} onChange={handleEditChange} required />
+                    </div>
+                    <Input label="Alternate Phone Number (Optional)" name="alternatePhone" type="tel" value={editForm.alternatePhone || ''} onChange={handleEditChange} />
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-slate-700 ml-1">Caste / Category</label>
+                      <select name="caste" value={editForm.caste} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all text-slate-700 font-medium" required>
+                        <option value="">Select Category</option>
+                        <option value="OC">OC</option>
+                        <option value="BC">BC</option>
+                        <option value="BCM">BCM</option>
+                        <option value="MBC">MBC</option>
+                        <option value="SC">SC</option>
+                        <option value="SCA">SCA</option>
+                        <option value="ST">ST</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-slate-700 ml-1">Religion</label>
+                      <select name="religion" value={editForm.religion} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all text-slate-700 font-medium" required>
+                        <option value="">Select Religion</option>
+                        <option value="Hindu">Hindu</option>
+                        <option value="Muslim">Muslim</option>
+                        <option value="Christian">Christian</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div className="px-8 py-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-4">
+                <Button variant="secondary" onClick={() => setIsEditing(false)} disabled={isSaving}>Cancel</Button>
+                <Button type="submit" form="profile-edit-form" variant="premium" isLoading={isSaving}>Save Changes</Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     );
   }

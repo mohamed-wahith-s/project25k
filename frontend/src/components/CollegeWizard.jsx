@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { topColleges, casteOptions } from '../data/topColleges';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, RotateCcw, CheckCircle2, Building2, BookOpen, Users, Award, ArrowLeft } from 'lucide-react';
+import { ChevronRight, ChevronLeft, RotateCcw, CheckCircle2, Building2, BookOpen, Users, Award, ArrowLeft } from 'lucide-react';
 
 const STEPS = {
   COLLEGE: 0,
@@ -30,12 +30,14 @@ export default function CollegeWizard() {
   const [selectedCollege, setCollege] = useState(null);
   const [selectedCourse,  setCourse]  = useState(null);
   const [selectedCaste,   setCaste]   = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const reset = () => {
     setStep(STEPS.COLLEGE);
     setCollege(null);
     setCourse(null);
     setCaste(null);
+    setCurrentPage(1);
   };
 
   const goBack = () => {
@@ -70,6 +72,12 @@ export default function CollegeWizard() {
   const resultData = selectedCourse && selectedCaste
     ? selectedCourse.casteSeats[selectedCaste]
     : null;
+
+  // Pagination data
+  const ITEMS_PER_PAGE = 8;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentColleges = topColleges.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(topColleges.length / ITEMS_PER_PAGE);
 
   return (
     <div className="w-full">
@@ -138,8 +146,8 @@ export default function CollegeWizard() {
             key="college"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {topColleges.map((college) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {currentColleges.map((college) => (
                 <button
                   key={college.id}
                   onClick={() => pickCollege(college)}
@@ -169,6 +177,29 @@ export default function CollegeWizard() {
                 </button>
               ))}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-8">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-primary-50 hover:text-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <div className="text-sm font-bold text-slate-600">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-primary-50 hover:text-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
 

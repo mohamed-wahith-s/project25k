@@ -19,7 +19,10 @@ const SubscriptionPage = () => {
     cutoff: '',
     counselingRank: '',
     caste: '',
-    religion: ''
+    religion: '',
+    address: '',
+    dateOfBirth: '',
+    alternatePhone: ''
   });
   const navigate = useNavigate();
 
@@ -38,8 +41,8 @@ const SubscriptionPage = () => {
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
-    if (!metadata.marks || !metadata.cutoff || !metadata.counselingRank || !metadata.caste || !metadata.religion) {
-      alert('Please fill in all details to proceed.');
+    if (!metadata.marks || !metadata.cutoff || !metadata.caste || !metadata.religion || !metadata.address || !metadata.dateOfBirth) {
+      alert('Please fill in all required details to proceed.');
       return;
     }
     
@@ -215,13 +218,40 @@ const SubscriptionPage = () => {
                 />
 
                 <Input
-                  label="TNEA Counseling Rank"
+                  label="TNEA Counseling Rank (Optional)"
                   name="counselingRank"
                   type="number"
                   placeholder="e.g. 12450"
                   value={metadata.counselingRank}
                   onChange={handleMetadataChange}
+                />
+
+                <Input
+                  label="Date of Birth"
+                  name="dateOfBirth"
+                  type="date"
+                  value={metadata.dateOfBirth}
+                  onChange={handleMetadataChange}
                   required
+                />
+
+                <Input
+                  label="Full Address"
+                  name="address"
+                  type="text"
+                  placeholder="Street, City, Pincode"
+                  value={metadata.address}
+                  onChange={handleMetadataChange}
+                  required
+                />
+
+                <Input
+                  label="Alternate Phone Number (Optional)"
+                  name="alternatePhone"
+                  type="tel"
+                  placeholder="e.g. 9876543210"
+                  value={metadata.alternatePhone}
+                  onChange={handleMetadataChange}
                 />
                 
                 <div className="space-y-1.5">

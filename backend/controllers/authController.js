@@ -72,4 +72,35 @@ const loginUser = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser };
+const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (user) {
+      // Update subscription metadata
+      user.subscriptionMetadata = {
+        ...user.subscriptionMetadata,
+        ...req.body.metadata
+      };
+
+      const updatedUser = await user.save();
+
+      res.json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        isSubscribed: updatedUser.isSubscribed,
+        subscriptionMetadata: updatedUser.subscriptionMetadata,
+        subscriptionPlan: updatedUser.subscriptionPlan,
+        token: generateToken(updatedUser._id),
+      });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { registerUser, loginUser, updateProfile };
