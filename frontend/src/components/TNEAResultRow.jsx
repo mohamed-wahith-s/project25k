@@ -5,6 +5,7 @@ const TNEAResultRow = ({ college, dept, communities, selectedCommunities, onClic
   const isPersonalized = selectedCommunities.length === 1;
   const userCaste = selectedCommunities[0];
   const cutoffValue = dept.cutoffs[userCaste] || '-';
+  const isFree = college.isFree;
   
   return (
     <div 
@@ -14,8 +15,13 @@ const TNEAResultRow = ({ college, dept, communities, selectedCommunities, onClic
       }`}
     >
       <div className="flex items-center gap-4">
-        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors relative">
           <Building size={16} />
+          {isFree && (
+            <div className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-lg border border-white">
+              FREE
+            </div>
+          )}
         </div>
         <div className="flex flex-col">
           <span className="text-[13px] font-bold text-slate-800 leading-snug line-clamp-1 uppercase group-hover:text-blue-600 transition-colors">{college.name}</span>
@@ -29,19 +35,19 @@ const TNEAResultRow = ({ college, dept, communities, selectedCommunities, onClic
       </div>
 
       {isPersonalized ? (
-        <div className="flex flex-col items-center justify-center gap-1">
-          <span className="text-[14px] font-black text-slate-900">{cutoffValue}</span>
-          <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest self-center">
-            <CheckCircle2 size={10} />
-            <span>Eligible</span>
-          </div>
+        <div className="flex justify-center">
+          <button className="premium-gradient text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-indigo-200">
+            View More
+          </button>
         </div>
       ) : (
-        communities.map(comm => (
-          <div key={comm} className={`text-[13px] font-bold text-center ${selectedCommunities.includes(comm) ? 'text-blue-600' : 'text-slate-700'}`}>
-            {dept.cutoffs[comm] || '-'}
-          </div>
-        ))
+        <div className="contents">
+          {communities.map(comm => (
+            <div key={comm} className={`text-[13px] font-bold text-center ${selectedCommunities.includes(comm) ? 'text-blue-600' : 'text-slate-700'}`}>
+              {dept.cutoffs[comm] || '-'}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

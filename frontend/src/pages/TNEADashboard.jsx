@@ -1,7 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Search, GraduationCap, Sun, ChevronsUpDown, UserCircle } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, GraduationCap, Sun, ChevronsUpDown, UserCircle, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import tneaData from '../data/tnea_data.json';
 import SearchSidebar from '../components/SearchSidebar';
 import TNEAResultRow from '../components/TNEAResultRow';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -16,34 +15,80 @@ const TNEADashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
+  const [colleges, setColleges] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [department, setDepartment] = useState("All");
 
+  useEffect(() => {
+    const fetchColleges = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/colleges');
+        const data = await response.json();
+        
+        // Transform data to match TNEAResultRow expectations
+        const transformedData = data.map(college => ({
+          ...college,
+          branches: college.branches.map(branch => ({
+            ...branch,
+            cutoffs: {
+              OC: branch.oc,
+              BC: branch.bc,
+              BCM: branch.bcm,
+              MBC: branch.mbc,
+              SC: branch.sc,
+              SCA: branch.sca,
+              ST: branch.st
+            }
+          }))
+        }));
+        
+        setColleges(transformedData);
+      } catch (err) {
+        console.error('Failed to fetch colleges:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isSubscribed) {
+      fetchColleges();
+    }
+  }, [isSubscribed]);
+
+  const allDepartments = useMemo(() => {
+    const depts = new Set(["All"]);
+    colleges.forEach(c => {
+      c.branches.forEach(b => depts.add(b.branchName));
+    });
+    return Array.from(depts);
+  }, [colleges]);
+
   const filteredData = useMemo(() => {
-    if (!isSubscribed) return []; // Data hidden for free users
+    if (!isSubscribed) return [];
     
     let results = [];
-    tneaData.forEach(college => {
-      college.departments.forEach(dept => {
+    colleges.forEach(college => {
+      college.branches.forEach(branch => {
         const matchesSearch = college.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            college.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            dept.branchName.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesDept = department === "All" || dept.branchName === department;
+                            college.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            branch.branchName.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesDept = department === "All" || branch.branchName === department;
         
-        // Premium Logic: Filter by User's Caste and Cutoff
         const profileCaste = user?.caste || 'OC';
         const profileCutoff = parseFloat(user?.cutoff || 0);
-        const requiredCutoff = parseFloat(dept.cutoffs[profileCaste] || 0);
+        const requiredCutoff = parseFloat(branch.cutoffs[profileCaste] || 0);
         
         const isEligible = requiredCutoff > 0 && profileCutoff >= requiredCutoff;
 
         if (matchesSearch && matchesDept && isEligible) {
-          results.push({ ...college, dept });
+          results.push({ ...college, dept: branch });
         }
       });
     });
     return results;
-  }, [searchQuery, department, isSubscribed, user]);
+  }, [searchQuery, department, isSubscribed, user, colleges]);
 
   if (!isSubscribed) {
     return (
@@ -65,6 +110,7 @@ const TNEADashboard = () => {
           resultsCount={filteredData.length}
           isSubscribed={true}
           hideCategory={true}
+          dynamicDepartments={allDepartments}
         />
 
         <main className="flex-1 min-w-0 pb-20">
@@ -73,16 +119,29 @@ const TNEADashboard = () => {
             <TableHeader userCaste={user?.caste || 'OC'} />
             
             <div className="space-y-3">
-              {filteredData.map((item, idx) => (
-                <TNEAResultRow 
-                  key={`${idx}`} 
-                  college={item} 
-                  dept={item.dept} 
-                  communities={communities} 
-                  selectedCommunities={[user?.caste || 'OC']}
-                  onClick={() => {}}
-                />
-              ))}
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                  <div className="w-12 h-12 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin"></div>
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Fetching colleges...</p>
+                </div>
+              ) : filteredData.length > 0 ? (
+                filteredData.map((item, idx) => (
+                  <TNEAResultRow 
+                    key={`${idx}`} 
+                    college={item} 
+                    dept={item.dept} 
+                    communities={communities} 
+                    selectedCommunities={[user?.caste || 'OC']}
+                    onClick={() => {}}
+                  />
+                ))
+              ) : (
+                <div className="bg-white border border-dashed border-slate-200 rounded-[2rem] py-20 text-center">
+                  <Building size={48} className="mx-auto text-slate-200 mb-4" />
+                  <h3 className="text-lg font-black text-slate-900 mb-1">No colleges found</h3>
+                  <p className="text-slate-500 font-medium">Try adjusting your search or department filter.</p>
+                </div>
+              )}
             </div>
           </div>
         </main>
@@ -118,7 +177,7 @@ const DashboardSearch = ({ searchQuery, setSearchQuery, user }) => (
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <Badge variant="premium" className="px-4 py-2 bg-blue-600 text-white border-0 font-black tracking-widest">Active Pro Axis</Badge>
+        <Badge variant="premium" className="px-4 py-2 premium-gradient text-white border-0 font-black tracking-widest uppercase">Active Pro Axis</Badge>
       </div>
     </div>
 

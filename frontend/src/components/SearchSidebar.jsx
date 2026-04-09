@@ -3,7 +3,6 @@ import { Filter, LayoutGrid, Building, ChevronDown, Lock } from 'lucide-react';
 import { Button } from './ui';
 
 const communities = ["OC", "BC", "BCM", "MBC", "SC", "SCA", "ST"];
-const departments = ["All", "Artificial Intelligence and Data Science", "Computer Science and Engineering", "Information Technology", "Mechanical Engineering", "Electronics and Communication Engineering", "Electrical and Electronics Engineering", "Civil Engineering"];
 
 const SearchSidebar = ({ 
   selectedCommunities, 
@@ -13,7 +12,8 @@ const SearchSidebar = ({
   resultsCount, 
   isSubscribed, 
   onUpgrade,
-  hideCategory = false
+  hideCategory = false,
+  dynamicDepartments = ["All"]
 }) => {
   return (
     <aside className="w-[280px] bg-white border border-slate-200 rounded-xl p-6 flex flex-col h-fit sticky top-24">
@@ -56,7 +56,7 @@ const SearchSidebar = ({
               onChange={(e) => setDepartment(e.target.value)}
               className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold appearance-none outline-none focus:ring-2 focus:ring-blue-50 transition-all pr-8"
             >
-              {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+              {dynamicDepartments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
             </select>
             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           </div>

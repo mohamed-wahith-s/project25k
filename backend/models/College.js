@@ -23,7 +23,10 @@ const Department = sequelize.define('Department', {
   mbc: { type: DataTypes.FLOAT },
   sc: { type: DataTypes.FLOAT },
   sca: { type: DataTypes.FLOAT },
-  st: { type: DataTypes.FLOAT }
+  st: { type: DataTypes.FLOAT },
+  
+  // Available seats per community
+  seats: { type: DataTypes.JSONB }
 });
 
 College.hasMany(Department, { as: 'branches', onDelete: 'CASCADE' });
