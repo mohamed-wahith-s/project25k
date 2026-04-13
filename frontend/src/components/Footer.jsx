@@ -30,7 +30,7 @@ const Footer = () => {
             </p>
             <div className="flex space-x-4">
               <SocialLink href="https://www.youtube.com/@collegediaries9022" icon={<Youtube size={20} />} label="YouTube" />
-              <SocialLink href="https://www.instagram.com/collegediaries1100" icon={<Instagram size={20} />} label="Instagram" />
+              <SocialLink href="https://instagram.com/collegediaries1100?igsh=Z3J6dWhpZmdzZDl4" icon={<Instagram size={20} />} label="Instagram" />
             </div>
           </div>
 

@@ -5,6 +5,7 @@ import { useAuth } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionProvider';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import FloatingCallButton from './components/FloatingCallButton';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import Dashboard from './pages/Dashboard';
@@ -64,6 +65,7 @@ const App = () => {
               </Routes>
             </main>
             <Footer />
+            <FloatingCallButton />
           </div>
         </Router>
       </SubscriptionProvider>

@@ -580,6 +580,36 @@ export const topColleges = [
         }
       }
     ]
+  },
+  {
+    id: 16, rank: 16, name: "Thiagarajar College of Engineering", city: "Madurai", type: "Govt-Aided", focus: "Engineering",
+    courses: [
+      { name: "Computer Science", casteSeats: { OC: { cutoff: "196.5" }, BC: { cutoff: "194.0" }, BCM: { cutoff: "192.0" }, MBC: { cutoff: "190.5" }, SC: { cutoff: "180.0" }, SCA: { cutoff: "172.0" }, ST: { cutoff: "165.0" } } }
+    ]
+  },
+  {
+    id: 17, rank: 17, name: "Government College of Technology", city: "Coimbatore", type: "Government", focus: "Engineering",
+    courses: [
+      { name: "Electronics & Communication", casteSeats: { OC: { cutoff: "195.0" }, BC: { cutoff: "192.5" }, BCM: { cutoff: "190.0" }, MBC: { cutoff: "188.0" }, SC: { cutoff: "178.0" }, SCA: { cutoff: "170.0" }, ST: { cutoff: "162.0" } } }
+    ]
+  },
+  {
+    id: 18, rank: 18, name: "Kumaraguru College of Technology", city: "Coimbatore", type: "Private", focus: "Engineering",
+    courses: [
+      { name: "Computer Science", casteSeats: { OC: { cutoff: "194.5" }, BC: { cutoff: "192.0" }, BCM: { cutoff: "190.5" }, MBC: { cutoff: "187.0" }, SC: { cutoff: "175.0" }, SCA: { cutoff: "168.0" }, ST: { cutoff: "160.0" } } }
+    ]
+  },
+  {
+    id: 19, rank: 19, name: "Kongu Engineering College", city: "Erode", type: "Private", focus: "Engineering",
+    courses: [
+      { name: "Information Technology", casteSeats: { OC: { cutoff: "192.0" }, BC: { cutoff: "189.5" }, BCM: { cutoff: "187.0" }, MBC: { cutoff: "185.0" }, SC: { cutoff: "172.0" }, SCA: { cutoff: "165.0" }, ST: { cutoff: "158.0" } } }
+    ]
+  },
+  {
+    id: 20, rank: 20, name: "Bannari Amman Institute", city: "Sathyamangalam", type: "Private", focus: "Engineering",
+    courses: [
+      { name: "Computer Science", casteSeats: { OC: { cutoff: "191.5" }, BC: { cutoff: "188.0" }, BCM: { cutoff: "185.5" }, MBC: { cutoff: "183.0" }, SC: { cutoff: "170.0" }, SCA: { SCA: "162.0" }, ST: { cutoff: "155.0" } } }
+    ]
   }
 ];
 

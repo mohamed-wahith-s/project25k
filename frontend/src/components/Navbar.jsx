@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import { LogOut, User, Search, Home, Star, GraduationCap } from 'lucide-react';
+import { LogOut, User, Search, Home, Star, GraduationCap, Youtube, Instagram } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Navbar = () => {
@@ -18,16 +18,16 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-lg border-b border-slate-100 px-4 py-3">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center space-x-2 group">
-          <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center text-white shadow-primary-200 shadow-lg group-hover:scale-110 transition-transform">
-            <GraduationCap size={24} />
+        <Link to="/" className="flex items-center space-x-2.5 group">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600 flex items-center justify-center text-white shadow-indigo-200 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+            <GraduationCap size={26} className="drop-shadow-md" />
           </div>
-          <div className="flex flex-col -space-y-1">
-            <span className="text-xs font-bold text-primary-600 uppercase tracking-widest">
+          <div className="flex flex-col -space-y-1.5">
+            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">
               College Diaries
             </span>
-            <span className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">
-              PathFinder
+            <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-indigo-900 to-blue-900 tracking-tight">
+              Path<span className="text-indigo-600">Finder</span>
             </span>
           </div>
         </Link>
@@ -63,6 +63,31 @@ const Navbar = () => {
           
           <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 border border-slate-200">
             <User size={20} />
+          </div>
+
+          <div className="flex items-center space-x-2 border-l border-slate-200 pl-4 ml-2">
+            <motion.a 
+              href="https://www.youtube.com/@collegediaries9022" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              whileHover={{ scale: 1.2, rotate: 5 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center" 
+              title="YouTube Channel"
+            >
+              <Youtube size={20} strokeWidth={2.5} />
+            </motion.a>
+            <motion.a 
+              href="https://instagram.com/collegediaries1100?igsh=Z3J6dWhpZmdzZDl4" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              whileHover={{ scale: 1.2, rotate: -5 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 text-pink-600 hover:bg-pink-50 rounded-lg transition-colors flex items-center justify-center" 
+              title="Instagram Profile"
+            >
+              <Instagram size={20} strokeWidth={2.5} />
+            </motion.a>
           </div>
 
           <button 

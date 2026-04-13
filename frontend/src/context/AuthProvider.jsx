@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
     if (identifier === "demo@tneahub.com") {
       const demoUser = {
         studentName: "RAJA GURU", email: "demo@tneahub.com", phone: "9876543210",
-        isSubscribed: false, // Normal User demo
+        isSubscribed: true, // Pro User demo
         caste: "BC", physics: 98, chemistry: 95, maths: 99, cutoff: 195.5
       };
       setUser(demoUser);

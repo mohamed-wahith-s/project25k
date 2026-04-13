@@ -10,6 +10,37 @@ import { Badge } from '../components/ui';
 
 const communities = ["OC", "BC", "BCM", "MBC", "SC", "SCA", "ST"];
 
+const ALLOWED_DEPARTMENTS = [
+  "CSE", "IT", "AIDS", "Cyber security", "Machine learning", 
+  "ECE", "CSBS", "EEE", "Bio medical", "Bio technology", 
+  "Civil", "Mech", "Agriculture", "Food technology", 
+  "Automobile", "E&I", "Robotics", "ECE VLSI"
+];
+
+// Helper to map long names to the short allowed names
+const normalizeBranchName = (name) => {
+  const n = name.toLowerCase();
+  if (n.includes('computer science and engineering') && !n.includes('cyber') && !n.includes('business')) return "CSE";
+  if (n.includes('information technology')) return "IT";
+  if (n.includes('artificial intelligence') && n.includes('data science')) return "AIDS";
+  if (n.includes('cyber security')) return "Cyber security";
+  if (n.includes('machine learning')) return "Machine learning";
+  if (n.includes('electronics and communication') && !n.includes('vlsi')) return "ECE";
+  if (n.includes('computer science and business')) return "CSBS";
+  if (n.includes('electrical and electronics')) return "EEE";
+  if (n.includes('biomedical')) return "Bio medical";
+  if (n.includes('biotechnology')) return "Bio technology";
+  if (n.includes('civil')) return "Civil";
+  if (n.includes('mechanical')) return "Mech";
+  if (n.includes('agriculture')) return "Agriculture";
+  if (n.includes('food technology')) return "Food technology";
+  if (n.includes('automobile')) return "Automobile";
+  if (n.includes('electronics and instrumentation')) return "E&I";
+  if (n.includes('robotics')) return "Robotics";
+  if (n.includes('vlsi')) return "ECE VLSI";
+  return null;
+};
+
 const TNEADashboard = () => {
   const { isSubscribed } = useSubscription();
   const { user } = useAuth();
@@ -27,22 +58,25 @@ const TNEADashboard = () => {
         const response = await fetch('/api/colleges');
         const data = await response.json();
         
-        // Transform data to match TNEAResultRow expectations
-        const transformedData = data.map(college => ({
-          ...college,
-          branches: college.branches.map(branch => ({
-            ...branch,
-            cutoffs: {
-              OC: branch.oc,
-              BC: branch.bc,
-              BCM: branch.bcm,
-              MBC: branch.mbc,
-              SC: branch.sc,
-              SCA: branch.sca,
-              ST: branch.st
-            }
-          }))
-        }));
+        // Transform data and filter departments
+        const transformedData = data.map(college => {
+          const validBranches = college.branches
+            .map(branch => {
+              const normalizedName = normalizeBranchName(branch.branchName);
+              if (!normalizedName) return null;
+              return {
+                ...branch,
+                branchName: normalizedName,
+                cutoffs: {
+                  OC: branch.oc, BC: branch.bc, BCM: branch.bcm,
+                  MBC: branch.mbc, SC: branch.sc, SCA: branch.sca, ST: branch.st
+                }
+              };
+            })
+            .filter(b => b !== null);
+
+          return { ...college, branches: validBranches };
+        }).filter(college => college.branches.length > 0);
         
         setColleges(transformedData);
       } catch (err) {
@@ -58,12 +92,8 @@ const TNEADashboard = () => {
   }, [isSubscribed]);
 
   const allDepartments = useMemo(() => {
-    const depts = new Set(["All"]);
-    colleges.forEach(c => {
-      c.branches.forEach(b => depts.add(b.branchName));
-    });
-    return Array.from(depts);
-  }, [colleges]);
+    return ["All", ...ALLOWED_DEPARTMENTS];
+  }, []);
 
   const filteredData = useMemo(() => {
     if (!isSubscribed) return [];
