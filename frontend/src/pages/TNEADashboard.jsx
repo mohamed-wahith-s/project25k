@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useMemo } from 'react';
 import { Search, GraduationCap, Sun, UserCircle, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -204,4 +205,16 @@ const TableHeader = () => (
   </div>
 );
 
+=======
+/* 
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, GraduationCap, Sun, UserCircle, Building } from 'lucide-react';
+... (rest of the code)
+*/
+
+const TNEADashboard = () => {
+  return null; // Commented out TNEA Hub
+};
+
+>>>>>>> 15bca9c (Fetched Collge details from backend)
 export default TNEADashboard;

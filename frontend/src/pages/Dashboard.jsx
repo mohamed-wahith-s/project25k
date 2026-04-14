@@ -98,7 +98,7 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-6 -mt-10 relative z-10 mb-12">
         <motion.div {...fadeUp(0.1)} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <StatCard icon={<GraduationCap size={20} />} label="12th Marks" value={`${user?.marks || '—'}%`} color="blue" />
-          <StatCard icon={<Target size={20} />} label="TNEA Cutoff" value={user?.cutoff || '—'} color="indigo" />
+          {/* <StatCard icon={<Target size={20} />} label="TNEA Cutoff" value={user?.cutoff || '—'} color="indigo" /> */}
           <StatCard icon={<Shield size={20} />} label="Category" value={user?.caste || 'OC'} color="violet" />
           <StatCard icon={<TrendingUp size={20} />} label="Eligibility" value={parseFloat(user?.cutoff) >= 180 ? 'Strong' : 'Moderate'} color="emerald" />
         </motion.div>
@@ -213,10 +213,10 @@ const EditProfileModal = ({ editForm, handleEditChange, handleUpdateProfile, isS
       <form onSubmit={handleUpdateProfile} className="p-8 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input label="12th Marks (%)" name="marks" type="number" value={editForm.marks} onChange={handleEditChange} />
-          <div className="space-y-1 relative">
+          {/* <div className="space-y-1 relative">
             <Input label="TNEA Cutoff" name="cutoff" type="number" value={editForm.cutoff} onChange={handleEditChange} disabled={isSubscribed} />
             {isSubscribed && <p className="text-[10px] text-amber-600 font-bold absolute -bottom-4 left-1">Locked for Pro Members</p>}
-          </div>
+          </div> */}
           <div className="space-y-1.5 relative">
             <label className="text-sm font-medium text-slate-700 ml-1">Caste / Category</label>
             <select 

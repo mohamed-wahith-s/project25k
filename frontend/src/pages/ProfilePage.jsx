@@ -23,8 +23,13 @@ const ProfilePage = () => {
     e.preventDefault();
     const studentCutoff = (parseFloat(formData.physics || 0) + parseFloat(formData.chemistry || 0)) / 2 + parseFloat(formData.maths || 0);
     subscribe({ ...formData, cutoff: studentCutoff });
+<<<<<<< HEAD
     alert("Profile saved! Your directory is now personalized.");
     navigate('/search');
+=======
+    // alert("Profile saved! Your TNEA Hub is now personalized.");
+    // navigate('/tnea');
+>>>>>>> 15bca9c (Fetched Collge details from backend)
   };
 
   return (
@@ -92,11 +97,11 @@ const AcademicScores = ({ formData, handleChange }) => (
     <div className="flex items-center justify-between mb-8"><h3 className="text-lg font-bold text-slate-900 flex items-center gap-2"><Calculator size={18} className="text-emerald-500" /> Academic Scores</h3><Badge variant="success" className="px-3 py-1 font-bold">Verified</Badge></div>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6"><Input label="Physics" name="physics" type="number" value={formData.physics} onChange={handleChange} /><Input label="Chemistry" name="chemistry" type="number" value={formData.chemistry} onChange={handleChange} /><Input label="Mathematics" name="maths" type="number" value={formData.maths} onChange={handleChange} /></div>
     <div className="mt-8 pt-8 border-t border-slate-50 grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-inner">
+      {/* <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-inner">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">TNEA Cutoff</p>
         <p className="text-4xl font-black text-slate-900">{((parseFloat(formData.physics || 0) + parseFloat(formData.chemistry || 0)) / 2 + parseFloat(formData.maths || 0)).toFixed(2)}</p>
-      </div>
-      <div className="flex flex-col justify-center"><label className="text-sm font-bold text-slate-700 block mb-1.5 ml-1 flex items-center gap-2"><Award size={16} className="text-amber-500" /> TNEA Rank (Optional)</label><Input name="tneaRank" value={formData.tneaRank} onChange={handleChange} /></div>
+      </div> */}
+      {/* <div className="flex flex-col justify-center"><label className="text-sm font-bold text-slate-700 block mb-1.5 ml-1 flex items-center gap-2"><Award size={16} className="text-amber-500" /> TNEA Rank (Optional)</label><Input name="tneaRank" value={formData.tneaRank} onChange={handleChange} /></div> */}
     </div>
   </Card>
 );

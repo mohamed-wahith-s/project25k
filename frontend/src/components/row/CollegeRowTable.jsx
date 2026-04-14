@@ -10,7 +10,7 @@ export default function CollegeRowTable({ filteredDepartments, selectedCommunity
           <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
             <th className="px-6 py-4">Course Branch</th><th className="px-4 py-4 text-center">Code</th>
             {communities.map(comm => <th key={comm} className={`px-4 py-4 text-center transition-colors ${selectedCommunity === comm ? 'text-blue-600 bg-blue-50/50 rounded-t-xl' : ''}`}>{comm}</th>)}
-            <th className="px-6 py-4 text-right">Status</th>
+            <th className="px-6 py-4 text-right">Seats</th>
           </tr>
         </thead>
         <tbody>
@@ -20,10 +20,25 @@ export default function CollegeRowTable({ filteredDepartments, selectedCommunity
               <td className="px-4 py-5 border-y border-slate-100 text-center font-mono text-xs font-bold text-slate-500">{dept.code}</td>
               {communities.map(comm => (
                 <td key={comm} className={`px-4 py-5 border-y border-slate-100 text-center transition-colors ${selectedCommunity === comm ? 'bg-blue-50/20 border-x-blue-100' : ''}`}>
-                  <div className="flex flex-col items-center"><span className={`text-sm font-black transition-colors ${selectedCommunity === comm ? 'text-blue-700' : 'text-slate-900'}`}>{dept.cutoffs[comm] || '-'}</span><span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Rank: {dept.ranks[comm] || '-'}</span></div>
+                  <div className="flex flex-col items-center">
+                    <span className={`text-sm font-black transition-colors ${selectedCommunity === comm ? 'text-blue-700' : 'text-slate-900'}`}>
+                      {dept?.cutoffs?.[comm] ?? '-'}
+                    </span>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+                      Rank: {dept?.ranks?.[comm] ?? '-'}
+                    </span>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+                      Seats: {dept?.seatsFilling?.[comm] ?? '-'}
+                    </span>
+                  </div>
                 </td>
               ))}
-              <td className="px-6 py-5 rounded-r-2xl border-y border-r border-slate-100 text-right"><div className="inline-flex flex-col items-end"><span className="text-xs font-black text-slate-900">{dept.seats[selectedCommunity] || '0/0'}</span><div className="w-12 h-1 bg-slate-100 rounded-full mt-1 overflow-hidden"><div className="h-full bg-blue-500 w-full" /></div></div></td>
+              <td className="px-6 py-5 rounded-r-2xl border-y border-r border-slate-100 text-right">
+                <div className="inline-flex flex-col items-end">
+                  <span className="text-xs font-black text-slate-900">{dept?.seatsFilling?.[selectedCommunity] ?? '—'}</span>
+                  <div className="w-12 h-1 bg-slate-100 rounded-full mt-1 overflow-hidden"><div className="h-full bg-blue-500 w-full" /></div>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>

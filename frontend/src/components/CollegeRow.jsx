@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CollegeRowHeader from './row/CollegeRowHeader';
 import CollegeRowTable from './row/CollegeRowTable';
 
-export default function CollegeRow({ college, selectedCommunity, userCutoff }) {
+export default function CollegeRow({ college, selectedCommunity, onViewProfile, onExpand }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const filteredDepartments = college.departments.filter(dept => {
-    if (!userCutoff) return true;
-    return parseFloat(userCutoff) >= parseFloat(dept.cutoffs[selectedCommunity] || 0);
-  });
+  const filteredDepartments = college.departments || [];
 
-  if (filteredDepartments.length === 0 && userCutoff) return null;
+  useEffect(() => {
+    if (isExpanded) onExpand?.(college);
+  }, [isExpanded, college, onExpand]);
 
   return (
     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-500 overflow-hidden group">
@@ -25,7 +24,15 @@ export default function CollegeRow({ college, selectedCommunity, userCutoff }) {
                 <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Community Focused</span></div>
                 <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500" /><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Seat Matrix Validated</span></div>
               </div>
-              <button className="text-[11px] font-black text-blue-600 uppercase tracking-widest hover:underline">View Full Profile</button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewProfile?.(college);
+                }}
+                className="text-[11px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+              >
+                View Full Profile
+              </button>
             </div>
           </motion.div>
         )}
@@ -33,5 +40,3 @@ export default function CollegeRow({ college, selectedCommunity, userCutoff }) {
     </div>
   );
 }
-
-export default CollegeRow;

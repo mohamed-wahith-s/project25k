@@ -4,10 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Building, ChevronLeft, ChevronRight } from 'lucide-react';
-import TNEAResultRow from '../components/TNEAResultRow';
+import CollegeRow from '../components/CollegeRow';
 import UnlockProCard from '../components/UnlockProCard';
 import SearchHeader from '../components/search/SearchHeader';
-import TNEATableHeader from '../components/search/TNEATableHeader';
 import CollegeDetailView from '../components/search/CollegeDetailView';
 
 const PAGE_SIZE = 20;
@@ -32,23 +31,41 @@ function groupRawRows(rows) {
     // Add raw row for this college
     collegeMap[code].rawRows.push(row);
 
-    const deptId = row.dept_id;
-    if (!collegeMap[code].departments[deptId]) {
-      collegeMap[code].departments[deptId] = {
+    // Some datasets have missing/duplicated dept_id; use a stable composite key so
+    // departments don't get merged and "disappear" in the dropdown.
+    const deptKey = [
+      row.dept_id ?? row.departments?.dept_id ?? 'na',
+      row.subject_code ?? row.departments?.subject_code ?? 'na',
+      row.departments?.dept_name ?? 'na',
+    ].join('|');
+
+    if (!collegeMap[code].departments[deptKey]) {
+      collegeMap[code].departments[deptKey] = {
         branchName: row.departments?.dept_name || '',
         code: row.departments?.subject_code || row.subject_code || '',
         cutoffs: {},
+        ranks: {},
         seats: {},
+        seatsFilling: {},
       };
     }
     const caste = row.caste_category;
     if (caste) {
-      collegeMap[code].departments[deptId].cutoffs[caste] = row.cutoff_mark ?? '-';
-      collegeMap[code].departments[deptId].seats[caste]   = row.total_seats_in_dept ?? '-';
+      collegeMap[code].departments[deptKey].cutoffs[caste] = row.cutoff_mark ?? '-';
+      collegeMap[code].departments[deptKey].ranks[caste]   = row.rank ?? '-';
+      collegeMap[code].departments[deptKey].seats[caste]   = row.total_seats_in_dept ?? '-';
+      collegeMap[code].departments[deptKey].seatsFilling[caste] = row.seats_filling ?? '-';
     }
   });
   Object.keys(collegeMap).forEach(code => {
-    collegeMap[code].departments = Object.values(collegeMap[code].departments);
+    collegeMap[code].departments = Object.values(collegeMap[code].departments).sort((a, b) => {
+      const an = (a.branchName || '').toString();
+      const bn = (b.branchName || '').toString();
+      if (an && bn) return an.localeCompare(bn);
+      if (an) return -1;
+      if (bn) return 1;
+      return (a.code || '').toString().localeCompare((b.code || '').toString());
+    });
   });
   return collegeMap;
 }
@@ -59,24 +76,25 @@ const CollegeSearch = () => {
   const { user }         = useAuth();
   const navigate         = useNavigate();
 
-  const [rawRows,        setRawRows]        = useState([]);
+  const [catalog,        setCatalog]        = useState([]);
+  const [detailsByCode,  setDetailsByCode]  = useState({});
   const [loading,        setLoading]        = useState(true);
   const [searchQuery,    setSearchQuery]    = useState('');
   const [currentPage,    setCurrentPage]    = useState(1);
   const [selectedDetail, setSelectedDetail] = useState(null);
   const [showUnlock,     setShowUnlock]     = useState(false);
 
-  // ── Fetch live data from backend ──────────────────────────────────────────
+  // ── Fetch college catalog (lightweight) ───────────────────────────────────
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-        const res  = await fetch(`${API_URL}/colleges`);
+        const res = await fetch(`${API_URL}/colleges/catalog?page=1&pageSize=2000`);
         const json = await res.json();
-        setRawRows(json.data || []);
+        setCatalog(json.data || []);
       } catch (err) {
-        console.error('Failed to fetch colleges:', err);
+        console.error('Failed to fetch colleges catalog:', err);
       } finally {
         setLoading(false);
       }
@@ -84,28 +102,38 @@ const CollegeSearch = () => {
     fetchData();
   }, []);
 
-  // ── Derive structured college map & flat directory rows ───────────────────
-  const collegeMap = useMemo(() => groupRawRows(rawRows), [rawRows]);
-
-  const directoryRows = useMemo(() => {
-    const rows = [];
-    Object.values(collegeMap).forEach(college => {
-      college.departments.forEach(dept => {
-        rows.push({ ...college, dept });
-      });
+  // Combine catalog with loaded details (dropdown fetch is per-college)
+  const directoryColleges = useMemo(() => {
+    return (catalog || []).map((c) => {
+      const code = c.college_code;
+      const detail = detailsByCode[code];
+      return {
+        college_code: code,
+        code,
+        name: c.college_name,
+        location: c.college_address || '',
+        departments: detail?.departments || [],
+        rawRows: detail?.rawRows || [],
+        // minCutoff derived from loaded details, otherwise placeholder
+        minCutoff: detail?.minCutoff ?? '—',
+      };
     });
-    return rows;
-  }, [collegeMap]);
+  }, [catalog, detailsByCode]);
 
   // ── Search filter ─────────────────────────────────────────────────────────
   const filteredData = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return directoryRows;
-    return directoryRows.filter(item =>
-      [item.name, item.location, item.dept?.branchName, item.college_code]
-        .some(s => s?.toLowerCase().includes(q))
-    );
-  }, [searchQuery, directoryRows]);
+    if (!q) return directoryColleges;
+    return directoryColleges.filter(item => {
+      const deptMatch = (item.departments || []).some((d) =>
+        [d.branchName, d.code].some((s) => s?.toLowerCase().includes(q))
+      );
+      return (
+        [item.name, item.location, item.college_code].some((s) => s?.toLowerCase().includes(q)) ||
+        deptMatch
+      );
+    });
+  }, [searchQuery, directoryColleges]);
 
   // Reset to page 1 on search change
   useEffect(() => { setCurrentPage(1); }, [searchQuery]);
@@ -120,9 +148,41 @@ const CollegeSearch = () => {
   };
 
   // ── View More ─────────────────────────────────────────────────────────────
-  const handleViewMore = (item) => {
-    const college = collegeMap[item.college_code];
-    setSelectedDetail(college || item);
+  const handleViewMore = (college) => {
+    setSelectedDetail(college);
+  };
+
+  const fetchCollegeDetailsIfNeeded = async (college) => {
+    const code = college?.college_code || college?.code;
+    if (!code) return;
+    if (detailsByCode[code]) return;
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${API_URL}/colleges/details/${code}`);
+      const json = await res.json();
+      const rows = json?.data || [];
+      const grouped = groupRawRows(rows);
+      const one = grouped[code];
+      if (!one) {
+        setDetailsByCode((prev) => ({ ...prev, [code]: { departments: [], rawRows: [], minCutoff: '—' } }));
+        return;
+      }
+      const cutoffs = (one.departments || [])
+        .map((d) => {
+          const v = d?.cutoffs?.OC;
+          const n = typeof v === 'number' ? v : Number.parseFloat(v);
+          return Number.isFinite(n) ? n : null;
+        })
+        .filter((n) => n !== null);
+      const minCutoff = cutoffs.length ? Math.max(...cutoffs).toFixed(1) : '—';
+
+      setDetailsByCode((prev) => ({
+        ...prev,
+        [code]: { ...one, minCutoff },
+      }));
+    } catch (e) {
+      console.error('Failed to fetch college details:', e);
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -191,15 +251,15 @@ const CollegeSearch = () => {
                   </p>
                 </div>
 
-                {/* Table */}
-                <TNEATableHeader />
-                <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
-                  {pagedData.map((item, idx) => (
-                    <TNEAResultRow
-                      key={`${item.college_code}-${item.dept?.code}-${idx}`}
-                      college={item}
-                      dept={item.dept}
-                      onClick={() => handleViewMore(item)}
+                {/* One card per college (no duplicates) */}
+                <div className="flex flex-col gap-4">
+                  {pagedData.map((college) => (
+                    <CollegeRow
+                      key={college.college_code}
+                      college={college}
+                      selectedCommunity={user?.caste || 'OC'}
+                      onViewProfile={handleViewMore}
+                      onExpand={fetchCollegeDetailsIfNeeded}
                     />
                   ))}
                 </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { School, MapPin, ChevronUp, ChevronDown } from 'lucide-react';
 
 export default function CollegeRowHeader({ college, isExpanded, setIsExpanded }) {
+  const deptCount = Array.isArray(college?.departments) ? college.departments.length : 0;
   return (
     <div onClick={() => setIsExpanded(!isExpanded)} className="flex items-center justify-between p-6 cursor-pointer bg-white">
       <div className="flex items-center gap-6 flex-1">
@@ -13,6 +14,9 @@ export default function CollegeRowHeader({ college, isExpanded, setIsExpanded })
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">Inst code: {college.code}</span>
             <span className="flex items-center text-xs font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100"><MapPin size={12} className="mr-1.5 text-blue-500" />{college.location}</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
+              Depts: {deptCount}
+            </span>
           </div>
         </div>
       </div>

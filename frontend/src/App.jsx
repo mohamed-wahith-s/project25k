@@ -12,7 +12,7 @@ import SignupPage from './pages/SignupPage';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 import CollegeSearch from './pages/CollegeSearch';
-import TNEADashboard from './pages/TNEADashboard';
+// import TNEADashboard from './pages/TNEADashboard';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -59,11 +59,13 @@ const App = () => {
                   </ProtectedRoute>
                 } />
 
+{/* 
                 <Route path="/tnea" element={
                   <ProtectedRoute>
                     <TNEADashboard />
                   </ProtectedRoute>
-                } />
+                } /> 
+                */}
               </Routes>
             </main>
             <Footer />
