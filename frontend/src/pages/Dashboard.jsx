@@ -129,7 +129,7 @@ const Dashboard = () => {
               tagColor="bg-emerald-50 text-emerald-700 border-emerald-100"
               onClick={() => navigate('/search')}
             />
-            <ActionCard
+            {/* <ActionCard
               icon={<Compass size={22} />}
               iconBg="bg-indigo-50 text-indigo-600"
               title="TNEA Hub"
@@ -138,7 +138,7 @@ const Dashboard = () => {
               tag={isSubscribed ? "Pro Unlocked" : "Pro Required"}
               tagColor={isSubscribed ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100"}
               onClick={() => isSubscribed ? navigate('/tnea') : navigate('/subscribe')}
-            />
+            /> */}
           </div>
         </motion.div>
 

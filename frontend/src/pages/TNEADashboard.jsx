@@ -1,94 +1,67 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, GraduationCap, Sun, UserCircle, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TNEAResultRow from '../components/TNEAResultRow';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useAuth } from '../context/AuthContext';
+import { useColleges } from '../context/CollegeContext';
 import UnlockProCard from '../components/UnlockProCard';
 import CollegeDetailView from '../components/search/CollegeDetailView';
 
 const TNEADashboard = () => {
   const { isSubscribed } = useSubscription();
   const { user } = useAuth();
+  const { collegedetails, loadingColleges } = useColleges();
   const navigate = useNavigate();
   
-  const [colleges, setColleges] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDetail, setSelectedDetail] = useState(null);
 
-  useEffect(() => {
-    const fetchColleges = async () => {
-      try {
-        setLoading(true);
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${API_URL}/colleges`);
-        const json = await response.json();
-        const rawData = json.data || [];
-        
-        // Keep the full raw data to find all branches for a college later
-        setColleges(rawData);
-      } catch (err) {
-        console.error('Failed to fetch colleges:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (isSubscribed) fetchColleges();
-  }, [isSubscribed]);
-
-  // Unique list of college-branch pairs for the main directory
-  const directoryData = useMemo(() => {
-    if (!isSubscribed) return [];
-    const seen = new Set();
-    return colleges.filter(item => {
-      const key = `${item.college_code}-${item.dept_id}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [colleges, isSubscribed]);
-
   const filteredData = useMemo(() => {
-    return directoryData.filter(item => {
-      const collegeName = (item.colleges?.college_name || "").toLowerCase();
+    if (!isSubscribed || !collegedetails) return [];
+    
+    return collegedetails.filter(item => {
+      const collegeName = (item.college_name || "").toLowerCase();
       const collegeCode = (item.college_code || "").toLowerCase();
-      const deptName = (item.departments?.dept_name || "").toLowerCase();
-      const location = (item.colleges?.college_address || "").toLowerCase();
-      const query = searchQuery.toLowerCase();
+      const location = (item.college_address || "").toLowerCase();
+      const query = searchQuery.toLowerCase().trim();
 
-      return collegeName.includes(query) || collegeCode.includes(query) || 
-             deptName.includes(query) || location.includes(query);
+      if (!query) return true;
+      return collegeName.includes(query) || collegeCode.includes(query) || location.includes(query);
     });
-  }, [searchQuery, directoryData]);
+  }, [searchQuery, collegedetails, isSubscribed]);
 
-  const handleViewMore = (item) => {
-    // Collect all raw rows for this specific college for the detailed table
-    const collegeRawRows = colleges.filter(c => c.college_code === item.college_code);
+  const handleViewMore = async (item) => {
+    try {
+      setDetailLoading(true);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      
+      const response = await fetch(`${API_URL}/colleges/details`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code: item.college_code })
+      });
+      const json = await response.json();
 
-    // Maintain the departments array for fallback support
-    const collegeBranches = collegeRawRows.map(c => ({
-      branchName: c.departments?.dept_name,
-      code: c.subject_code,
-      cutoffs: {
-        OC: c.oc_cutoff,
-        BC: c.bc_cutoff,
-        BCM: c.bcm_cutoff,
-        MBC: c.mbc_cutoff,
-        SC: c.sc_cutoff,
-        SCA: c.sca_cutoff,
-        ST: c.st_cutoff
+      if (json.success) {
+        setSelectedDetail({
+          name: item.college_name,
+          location: item.college_address,
+          college_code: item.college_code,
+          rawRows: json.data // All branches and cutoffs for this college
+        });
+      } else {
+        alert("Could not load details for this college.");
       }
-    }));
-
-    setSelectedDetail({
-      name: item.colleges?.college_name || item.college_name,
-      location: item.colleges?.college_address || item.college_address,
-      college_code: item.college_code,
-      departments: collegeBranches,
-      rawRows: collegeRawRows // Essential for the new Mega-Table layout
-    });
+    } catch (error) {
+      console.error('Error fetching details:', error);
+      alert("Error loading details. Please try again.");
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   if (!isSubscribed) {
@@ -120,27 +93,28 @@ const TNEADashboard = () => {
           <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
             <TableHeader />
             <div className="divide-y divide-slate-100">
-              {loading ? (
+              {loadingColleges ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                   <div className="w-10 h-10 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
                   <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Updating Directory...</p>
                 </div>
               ) : filteredData.length > 0 ? (
-                filteredData.map((item, idx) => (
-                  <TNEAResultRow 
-                    key={idx} 
-                    college={{
-                      name: item.colleges?.college_name,
-                      location: item.colleges?.college_address,
-                      college_code: item.college_code
-                    }} 
-                    dept={{
-                      branchName: item.departments?.dept_name,
-                      code: item.subject_code
-                    }} 
-                    onClick={() => handleViewMore(item)}
-                  />
-                ))
+                filteredData.map((item, idx) => {
+                  const branchCount = item.cutoff_data?.[0]?.count || 0;
+                  return (
+                    <TNEAResultRow 
+                      key={idx} 
+                      college={{
+                        name: item.college_name,
+                        location: item.college_address,
+                        college_code: item.college_code,
+                        branchCount: branchCount
+                      }} 
+                      loading={detailLoading && selectedDetail?.college_code === item.college_code}
+                      onClick={() => handleViewMore(item)}
+                    />
+                  );
+                })
               ) : (
                 <div className="bg-white py-20 text-center">
                   <Building size={48} className="mx-auto text-slate-200 mb-4" />
@@ -152,6 +126,16 @@ const TNEADashboard = () => {
           </div>
         </main>
       </div>
+      
+      {/* Detail Fetching Loader */}
+      {detailLoading && (
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[100] flex items-center justify-center">
+          <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin"></div>
+            <p className="text-xs font-black text-slate-900 uppercase tracking-widest">Loading College Data...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -202,7 +186,7 @@ const DashboardSearch = ({ searchQuery, setSearchQuery, user }) => (
       </div>
       <input 
         type="text" 
-        placeholder="Search by Institution name, Branch, or College Code (e.g. 2711) . . ."
+        placeholder="Search by Institution name or College Code (e.g. 2711) . . ."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         className="w-full bg-white border-2 border-slate-100 hover:border-slate-200 focus:border-indigo-500/30 focus:ring-4 focus:ring-indigo-500/5 py-5 pl-16 pr-8 rounded-[2rem] text-sm text-slate-700 outline-none font-bold placeholder:text-slate-300 shadow-sm transition-all"
@@ -212,10 +196,10 @@ const DashboardSearch = ({ searchQuery, setSearchQuery, user }) => (
 );
 
 const TableHeader = () => (
-  <div className="grid grid-cols-[80px_2.5fr_2fr_120px] px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-left items-center bg-slate-50/80 backdrop-blur-sm border-b border-slate-100">
+  <div className="grid grid-cols-[80px_2.5fr_1fr_120px] px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-left items-center bg-slate-50/80 backdrop-blur-sm border-b border-slate-100">
     <span className="text-center">Code</span>
     <span>Institution Details</span>
-    <span>Branch Detail</span>
+    <span className="text-center">Availability</span>
     <span className="text-right pr-6">Action</span>
   </div>
 );

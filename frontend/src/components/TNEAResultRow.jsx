@@ -1,10 +1,10 @@
 import React from 'react';
 import { MapPin, Building, CheckCircle2, ChevronsUpDown } from 'lucide-react';
 
-const TNEAResultRow = ({ college, dept, onClick }) => {
+const TNEAResultRow = ({ college, onClick }) => {
   return (
     <div 
-      className="bg-white border-b border-slate-100 px-6 py-3 grid grid-cols-[80px_2.5fr_2fr_120px] items-center gap-6 hover:bg-slate-50/50 transition-all duration-200 group cursor-default"
+      className="bg-white border-b border-slate-100 px-6 py-3 grid grid-cols-[80px_2.5fr_1fr_120px] items-center gap-6 hover:bg-slate-50/50 transition-all duration-200 group cursor-default"
     >
       {/* College Code Column */}
       <div className="flex justify-center">
@@ -26,13 +26,10 @@ const TNEAResultRow = ({ college, dept, onClick }) => {
         </div>
       </div>
       
-      {/* Branch Details Column */}
-      <div className="flex flex-col">
-        <span className="text-[11px] font-black text-slate-700 uppercase leading-tight tracking-tight">
-          {dept.branchName || dept.dept_name}
-        </span>
-        <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mt-0.5 opacity-80">
-          {dept.code || dept.subject_code}
+      {/* Availability Column */}
+      <div className="flex flex-col items-center">
+        <span className="text-[11px] font-black text-indigo-500 uppercase leading-tight tracking-tight bg-indigo-50 px-3 py-1 rounded-full">
+          {college.branchCount || 0} Courses
         </span>
       </div>
 

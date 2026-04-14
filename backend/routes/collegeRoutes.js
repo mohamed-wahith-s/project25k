@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { getColleges } = require('../controllers/collegeController');
+const { getCollegesList, getCollegeByCode } = require('../controllers/collegeController');
 
-router.get('/', getColleges);
+router.post('/', getCollegesList);
+router.post('/details', getCollegeByCode);
 
 module.exports = router;

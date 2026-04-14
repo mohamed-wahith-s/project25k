@@ -1,81 +1,103 @@
 const { supabase } = require('../db');
 
 /**
- * @desc    Get cutoff data with college and department joins and filtering
+ * @desc    Get all unique institutions from the colleges table
  * @route   GET /api/colleges
  * @access  Public
  */
-exports.getColleges = async (req, res) => {
+exports.getCollegesList = async (req, res) => {
   try {
-    const { cutoff_mark, caste_category, dept_id, search } = req.query;
+    const { search } = req.body;
 
-    // Start query on cutoff_data and join with colleges and departments
-    // Supabase syntax for joins: '*, colleges(*), departments(*)'
+    // Default query: Fetch institutions and their branch counts
+    let query = supabase
+      .from('colleges')
+      .select('*, cutoff_data(count)')
+      .order('college_name', { ascending: true });
+
+    // if search is provided, we search in institution details
+    if (search) {
+      // Check if search matches college_name or college_code
+      query = query.or(`college_name.ilike.%${search}%,college_code.ilike.%${search}%`);
+      
+      // Note: Full branch search (searching for "CSE" to find colleges) 
+      // is most efficiently done via a Database VIEW or RPC in Supabase 
+      // for large datasets. For now, we search within the institutions.
+    }
+
+    const { data: colleges, error } = await query;
+
+    if (error) throw error;
+
+    return res.status(200).json({
+      success: true,
+      count: colleges.length,
+      data: colleges
+    });
+  } catch (err) {
+    console.error('🔥 Error fetching colleges list:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching institutions.',
+      error: err.message
+    });
+  }
+};
+
+/**
+ * @desc    Get specific cutoff data for a requested college code
+ * @route   GET /api/colleges/:code
+ * @access  Public
+ */
+exports.getCollegeByCode = async (req, res) => {
+  try {
+    const { code, cutoff_mark, caste_category } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ success: false, message: 'College code is required.' });
+    }
+
+    // Normalized codes to handle padding differences (e.g. "1" matches "01")
+    const codeVariants = [code];
+    if (code.length === 1) codeVariants.push(`0${code}`);
+    if (code.length === 2 && !code.startsWith('0')) codeVariants.unshift(`0${code}`); 
+    if (code.length === 2 && code.startsWith('0')) codeVariants.push(code.substring(1));
+
+    // Fetch detailed cutoff data joined with departments for this specific college
     let query = supabase
       .from('cutoff_data')
       .select(`
         *,
-        colleges (
-          college_code,
-          college_name,
-          college_address
-        ),
         departments (
           dept_id,
           dept_name,
           subject_code
         )
-      `);
+      `)
+      .in('college_code', codeVariants);
 
-    // 1. Filter by Cutoff Mark (Greater than or equal to)
+    // Optional Filtering
     if (cutoff_mark) {
       query = query.lte('cutoff_mark', parseFloat(cutoff_mark));
     }
-
-    // 2. Filter by Caste Category
     if (caste_category && caste_category !== 'All') {
       query = query.eq('caste_category', caste_category);
     }
 
-    // 3. Optional Filter by Department ID
-    if (dept_id && dept_id !== 'All') {
-      query = query.eq('dept_id', dept_id);
-    }
+    const { data: details, error } = await query.order('cutoff_mark', { ascending: false });
 
-    // 4. Optional Text Search on College Name or Department Name
-    if (search) {
-      // Note: Supabase complex or filtering across joins is limited in the JS client.
-      // We will search mainly in colleges and departments if needed, but for simplicity
-      // and following the prompt's focus on cutoff/caste, we filter these first.
-      query = query.or(`subject_code.ilike.%${search}%,seats_filling.ilike.%${search}%`);
-    }
-
-    const { data: cutoffResults, error } = await query.order('cutoff_mark', { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-
-    // Handle the case where no data is found
-    if (!cutoffResults || cutoffResults.length === 0) {
-      return res.status(200).json({
-        success: true,
-        count: 0,
-        data: []
-      });
-    }
+    if (error) throw error;
 
     return res.status(200).json({
       success: true,
-      count: cutoffResults.length,
-      data: cutoffResults
+      count: details.length,
+      data: details
     });
-
   } catch (err) {
-    console.error('🔥 Error fetching cutoff data:', err.message);
-    return res.status(500).json({ 
+    console.error(`🔥 Error fetching details for college ${req.params.code}:`, err.message);
+    return res.status(500).json({
       success: false,
-      message: 'Server error while fetching cutoff data.',
+      message: 'Server error while fetching college details.',
       error: err.message
     });
   }

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionProvider';
+import { CollegeProvider } from './context/CollegeProvider';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FloatingCallButton from './components/FloatingCallButton';
@@ -31,10 +32,11 @@ const App = () => {
   return (
     <AuthProvider>
       <SubscriptionProvider>
-        <Router>
-          <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-blue-100">
-            <Navbar />
-            <main className="flex-1">
+        <CollegeProvider>
+          <Router>
+            <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-blue-100">
+              <Navbar />
+              <main className="flex-1">
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
@@ -67,7 +69,8 @@ const App = () => {
             <Footer />
             <FloatingCallButton />
           </div>
-        </Router>
+          </Router>
+        </CollegeProvider>
       </SubscriptionProvider>
     </AuthProvider>
   );

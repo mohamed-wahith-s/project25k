@@ -5,7 +5,7 @@ import { Award, ChevronDown, ChevronUp } from 'lucide-react';
 // rawRows: the unmodified API rows for a single college
 export default function BranchComparisonTable({ rawRows = [], departments = [] }) {
 
-  const [expandedBranch, setExpandedBranch] = useState(null);
+  const [expandedBranch, setExpandedBranch] = useState(0);
 
   // ----- Case A: we have raw rows (preferred — shows all DB data) ----------
   if (rawRows.length > 0) {

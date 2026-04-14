@@ -36,9 +36,9 @@ const Navbar = () => {
         <div className="hidden md:flex items-center space-x-8">
           <NavLink to="/" icon={<Home size={18} />} label="Home" active={isActive('/')} />
           <NavLink to="/search" icon={<Search size={18} />} label="Colleges" active={isActive('/search')} />
-          {isSubscribed && (
+          {/* {isSubscribed && (
             <NavLink to="/tnea" icon={<GraduationCap size={18} />} label="TNEA Hub" active={isActive('/tnea')} />
-          )}
+          )} */}
           {!isSubscribed && (
             <motion.div
               animate={{ opacity: [1, 0.4, 1], scale: [1, 1.05, 1] }}

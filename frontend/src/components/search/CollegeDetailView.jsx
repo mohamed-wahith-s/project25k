@@ -70,7 +70,7 @@ export default function CollegeDetailView({ item, onClose, onSubscribe }) {
               )}
             </div>
             
-            <BranchComparisonTable departments={departments} />
+            <BranchComparisonTable rawRows={rawRows} departments={departments} />
           </section>
 
           <footer className="pt-20 pb-10 border-t border-slate-200 text-center">

@@ -23,8 +23,8 @@ const ProfilePage = () => {
     e.preventDefault();
     const studentCutoff = (parseFloat(formData.physics || 0) + parseFloat(formData.chemistry || 0)) / 2 + parseFloat(formData.maths || 0);
     subscribe({ ...formData, cutoff: studentCutoff });
-    alert("Profile saved! Your TNEA Hub is now personalized.");
-    navigate('/tnea');
+    alert("Profile saved! Your directory is now personalized.");
+    navigate('/search');
   };
 
   return (
