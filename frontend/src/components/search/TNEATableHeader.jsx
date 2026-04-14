@@ -8,17 +8,13 @@ const HeaderItem = ({ label, align = "center" }) => (
   </div>
 );
 
-export default function TNEATableHeader({ communities }) {
-  const isPersonalized = communities.length === 1;
+export default function TNEATableHeader() {
   return (
-    <div 
-      className={`px-6 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest items-center grid gap-4 ${
-        isPersonalized ? 'grid-cols-[1.5fr_1.5fr_150px]' : `grid-cols-[1.5fr_1.5fr_repeat(${communities.length},60px)]`
-      }`}
-    >
-      <HeaderItem label="Institution" align="start" />
-      <HeaderItem label="Branch Detail" align="start" />
-      {communities.map(comm => <HeaderItem key={comm} label={comm} align="center" />)}
+    <div className="w-full grid grid-cols-[80px_2.5fr_2fr_120px] px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-left items-center bg-slate-50/80 backdrop-blur-sm border border-slate-200 rounded-t-[1.5rem] mt-4">
+      <span className="text-center">Code</span>
+      <span>Institution Details</span>
+      <span>Branch Detail</span>
+      <span className="text-right pr-6">Action</span>
     </div>
   );
 }

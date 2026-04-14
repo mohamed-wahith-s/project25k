@@ -6,8 +6,6 @@ const { connectDB } = require('./db');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const authRoutes = require('./routes/authRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
 const collegeRoutes = require('./routes/collegeRoutes');
 
 const app = express();
@@ -17,12 +15,10 @@ app.use(express.json());
 app.use(cors());
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/payment', paymentRoutes);
 app.use('/api/colleges', collegeRoutes);
 
 app.get('/', (req, res) => {
-  res.send('PathFinder PostgreSQL Backend is running...');
+  res.send('PathFinder Supabase Backend is running ✅');
 });
 
 // Database Connection & Server Startup

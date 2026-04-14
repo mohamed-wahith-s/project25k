@@ -1,11 +1,18 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const User = require('../models/User');
+const { supabase } = require('../db');
 
-// Create Order
+// ─────────────────────────────────────────────────────────────
+//  @route   POST /api/payment/create-order
+//  @access  Protected
+// ─────────────────────────────────────────────────────────────
 const createOrder = async (req, res) => {
   const { planId, amount, metadata } = req.body;
-  
+
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ message: 'Invalid amount provided.' });
+  }
+
   try {
     const razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
@@ -13,66 +20,106 @@ const createOrder = async (req, res) => {
     });
 
     const options = {
-      amount: amount * 100, // amount in the smallest currency unit (paise)
-      currency: "INR",
-      receipt: `receipt_order_${Date.now()}`
+      amount: Math.round(amount * 100), // paise
+      currency: 'INR',
+      receipt: `receipt_${Date.now()}`,
     };
 
     const order = await razorpay.orders.create(options);
 
-    // We can temporarily save plan info or metadata if needed, but usually we just send order to client
-    res.json({
+    return res.json({
       success: true,
       order,
       planId,
       metadata,
-      key_id: process.env.RAZORPAY_KEY_ID // Send to frontend for checkout initialization
+      key_id: process.env.RAZORPAY_KEY_ID,
     });
   } catch (error) {
-    console.log("🔥 FULL ERROR OBJECT:", error);
-    console.log("🔥 ERROR MESSAGE:", error.message);
-    console.log("🔥 ERROR DESCRIPTION:", error?.error?.description);
-
-    res.status(500).json({
-      message: "Error creating order",
-      error: error?.error?.description || error.message
+    console.error('🔥 Create order error:', error?.error?.description || error.message);
+    return res.status(500).json({
+      message: 'Error creating Razorpay order.',
+      error: error?.error?.description || error.message,
     });
   }
 };
 
-// Verify Payment
+// ─────────────────────────────────────────────────────────────
+//  @route   POST /api/payment/verify
+//  @access  Protected
+// ─────────────────────────────────────────────────────────────
 const verifyPayment = async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planId, metadata } = req.body;
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    planId,
+    metadata,
+  } = req.body;
 
   try {
-    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    // 1. Verify Razorpay signature
+    const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSign = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || 'dummy_key_secret')
-      .update(sign.toString())
-      .digest("hex");
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(sign)
+      .digest('hex');
 
-    if (razorpay_signature === expectedSign) {
-      // Payment is verified
-      
-      // Update User based on req.user.id (from auth middleware)
-      const user = await User.findById(req.user.id);
-      if (user) {
-        user.isSubscribed = true;
-        user.subscriptionPlan = planId;
-        user.subscriptionMetadata = metadata;
-        user.paymentId = razorpay_payment_id;
-        await user.save();
-
-        res.json({ success: true, message: "Payment verified successfully", user });
-      } else {
-        res.status(404).json({ message: 'User not found' });
-      }
-    } else {
-      res.status(400).json({ message: "Invalid signature sent!" });
+    if (razorpay_signature !== expectedSign) {
+      return res.status(400).json({ message: 'Invalid payment signature.' });
     }
+
+    // 2. Build subscription update payload from metadata
+    const updatePayload = {
+      is_subscribed: true,
+      subscription_plan: planId,
+      payment_id: razorpay_payment_id,
+      subscription_metadata: metadata || {},
+      updated_at: new Date().toISOString(),
+    };
+
+    // Promote key academic fields from metadata to top-level columns
+    if (metadata) {
+      if (metadata.marks)          updatePayload.marks           = parseFloat(metadata.marks)         || null;
+      if (metadata.cutoff)         updatePayload.cutoff          = parseFloat(metadata.cutoff)        || null;
+      if (metadata.caste)          updatePayload.caste           = metadata.caste;
+      if (metadata.religion)       updatePayload.religion        = metadata.religion;
+      if (metadata.counselingRank) updatePayload.counseling_rank = parseInt(metadata.counselingRank)  || null;
+      if (metadata.address)        updatePayload.address         = metadata.address;
+      if (metadata.dateOfBirth)    updatePayload.date_of_birth   = metadata.dateOfBirth;
+      if (metadata.alternatePhone) updatePayload.alternate_phone = metadata.alternatePhone;
+    }
+
+    // 3. Update user in Supabase
+    const { data: updatedUser, error } = await supabase
+      .from('users')
+      .update(updatePayload)
+      .eq('id', req.user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Payment verified and subscription activated successfully.',
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.username,
+        email: updatedUser.email,
+        isSubscribed: updatedUser.is_subscribed,
+        subscriptionPlan: updatedUser.subscription_plan,
+        subscriptionMetadata: updatedUser.subscription_metadata,
+        cutoff: updatedUser.cutoff,
+        caste: updatedUser.caste,
+        marks: updatedUser.marks,
+      },
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error verifying payment' });
+    console.error('Verify payment error:', error.message);
+    return res.status(500).json({ message: 'Error verifying payment.' });
   }
 };
 

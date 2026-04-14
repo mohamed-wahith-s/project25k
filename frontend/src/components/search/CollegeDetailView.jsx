@@ -1,50 +1,81 @@
 import React from 'react';
 import { ArrowLeft, Building, MapPin, GraduationCap, Users, Zap } from 'lucide-react';
-import DetailStatGrid from './DetailStatGrid';
-import DetailSeatTable from './DetailSeatTable';
+import BranchComparisonTable from './BranchComparisonTable';
 
 export default function CollegeDetailView({ item, onClose, onSubscribe }) {
+  // rawRows = unmodified API rows for this college (passed from CollegeSearch/TNEADashboard)
+  const rawRows     = item.rawRows     || [];
+  const departments = item.departments || (item.dept ? [item.dept] : []);
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <div className="bg-white border-b border-slate-100 sticky top-0 z-10 px-6 py-4 flex items-center justify-between">
+    <div className="flex flex-col min-h-screen bg-slate-50">
+      <div className="bg-white border-b border-slate-100 sticky top-0 z-50 px-6 py-4 flex items-center justify-between shadow-sm backdrop-blur-md bg-white/80">
         <button onClick={onClose} className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-black text-xs uppercase tracking-widest transition-colors group">
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back to Results
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
         </button>
-        <div className="flex items-center gap-3"><Building size={16} className="text-slate-400" /><span className="text-xs font-black text-slate-400 uppercase tracking-widest">{item.id}</span></div>
-      </div>
-      <div className="max-w-4xl mx-auto w-full px-6 py-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
-          <div>
-            <div className="flex items-center gap-2 mb-3"><span className={`text-[10px] font-black px-3 py-1 rounded-full border uppercase tracking-widest ${item.isFree ? 'bg-primary-50 text-primary-600 border-primary-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>{item.isFree ? 'Free Access' : 'Pro Access'}</span></div>
-            <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-none mb-4">{item.name}</h1>
-            <p className="text-lg text-slate-500 font-medium flex items-center gap-2"><MapPin size={20} className="text-slate-300" /> {item.location}</p>
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-end">
+             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">College Code</span>
+             <span className="text-sm font-black text-slate-900 tracking-tight">{item.code || item.college_code}</span>
           </div>
-          <div className="w-20 h-20 rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-center text-primary-600 shadow-xl shadow-slate-100"><Building size={32} /></div>
+          <div className="w-px h-8 bg-slate-100 mx-2"></div>
+          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400"><Building size={20} /></div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            <section className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-slate-200">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10"><GraduationCap size={28} /></div>
-                <div>
-                  <p className="text-white/50 text-[10px] font-black uppercase tracking-widest leading-none mb-1">Course Detail</p>
-                  <h3 className="text-2xl font-black tracking-tight">{item.dept.branchName}</h3>
-                  <p className="text-white/40 text-xs font-bold mt-1 uppercase tracking-widest">Code: {item.dept.code}</p>
-                </div>
+      </div>
+
+      <div className="max-w-[1400px] mx-auto w-full px-8 py-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-[10px] font-black px-3 py-1 bg-indigo-600 text-white rounded-full uppercase tracking-widest shadow-lg shadow-indigo-200">Official TNEA Data</span>
+              {item.isFree && <span className="text-[10px] font-black px-3 py-1 bg-white border border-slate-200 text-slate-500 rounded-full uppercase tracking-widest">Free Access</span>}
+            </div>
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-[1.1] mb-6">
+              {item.name || item.college_name}
+            </h1>
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-2 text-slate-500 font-bold bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm">
+                <MapPin size={18} className="text-indigo-400" />
+                <span className="text-sm uppercase tracking-tight">{item.location || item.college_address}</span>
               </div>
-              <DetailStatGrid />
-            </section>
-            <section>
-              <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6"><Users size={20} className="text-primary-600" /> Community-wise Breakdown</h3>
-              <DetailSeatTable item={item} />
-            </section>
+              <div className="flex items-center gap-2 text-slate-500 font-bold bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm">
+                <GraduationCap size={18} className="text-indigo-400" />
+                <span className="text-sm uppercase tracking-tight">{departments.length} Courses Available</span>
+              </div>
+            </div>
           </div>
-          <div className="bg-gradient-to-br from-primary-600 to-indigo-600 rounded-[2rem] p-8 text-white shadow-xl shadow-primary-100 h-fit">
-            <Zap size={24} className="mb-4" />
-            <h4 className="text-lg font-black mb-2">Want deeper insights?</h4>
-            <p className="text-white/70 text-sm font-medium mb-6">Get round-wise cutoff predictions and personalized choice filling assistance.</p>
-            <button onClick={onSubscribe} className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-102 transition-transform">Upgrade Now</button>
-          </div>
+        </div>
+
+        <div className="space-y-12">
+          <section>
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
+                    <Users size={20} />
+                  </div>
+                  All Department Cutoffs
+                </h3>
+                <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-2 ml-13">Select a category to compare different branches</p>
+              </div>
+              
+              {!item.isSubscribed && (
+                <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 px-6 py-4 rounded-3xl text-white flex items-center gap-6 shadow-xl shadow-indigo-200">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black uppercase tracking-widest opacity-80">Premium Access</span>
+                    <span className="text-sm font-bold">Unlock Round 2 & 3 Data</span>
+                  </div>
+                  <button onClick={onSubscribe} className="bg-white text-indigo-600 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 transition-transform">Upgrade</button>
+                </div>
+              )}
+            </div>
+            
+            <BranchComparisonTable departments={departments} />
+          </section>
+
+          <footer className="pt-20 pb-10 border-t border-slate-200 text-center">
+            <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em]">Tamilnadu Engineering Admissions Directory ● 2024</p>
+          </footer>
         </div>
       </div>
     </div>

@@ -1,33 +1,33 @@
-const { Sequelize } = require('sequelize');
+const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST || 'localhost',
-    dialect: 'postgres',
-    logging: false, // Disable console logging
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
-    }
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
   }
-);
+});
 
 const connectDB = async () => {
   try {
-    await sequelize.authenticate();
-    console.log('PostgreSQL Connected Successfully!');
-    // Sync models to database
-    await sequelize.sync({ force: false }); // Change to true only for dev teardowns
+    // Verify connection by doing a lightweight query
+    const { error } = await supabase.from('colleges').select('college_code').limit(1);
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 = no rows returned, which is fine - this just means table exists but is empty
+      throw error;
+    }
+    console.log('✅ Supabase PostgreSQL Connected Successfully!');
   } catch (err) {
-    console.error('Unable to connect to PostgreSQL:', err.message);
+    console.error('❌ Unable to connect to Supabase:', err.message);
     process.exit(1);
   }
 };
 
-module.exports = { sequelize, connectDB };
+module.exports = { supabase, connectDB };
