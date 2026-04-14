@@ -8,6 +8,7 @@ import CollegeRow from '../components/CollegeRow';
 import UnlockProCard from '../components/UnlockProCard';
 import SearchHeader from '../components/search/SearchHeader';
 import CollegeDetailView from '../components/search/CollegeDetailView';
+import { getApiBase, joinApi } from '../utils/apiBase';
 
 const PAGE_SIZE = 20;
 
@@ -51,10 +52,39 @@ function groupRawRows(rows) {
     }
     const caste = row.caste_category;
     if (caste) {
-      collegeMap[code].departments[deptKey].cutoffs[caste] = row.cutoff_mark ?? '-';
-      collegeMap[code].departments[deptKey].ranks[caste]   = row.rank ?? '-';
-      collegeMap[code].departments[deptKey].seats[caste]   = row.total_seats_in_dept ?? '-';
-      collegeMap[code].departments[deptKey].seatsFilling[caste] = row.seats_filling ?? '-';
+      const dept = collegeMap[code].departments[deptKey];
+
+      // Some colleges have multiple rows per (dept,caste). Don't let a later null/blank
+      // overwrite a real value.
+      const prevCutoff = dept.cutoffs[caste];
+      const nextCutoff = row.cutoff_mark;
+      const prevCutoffNum = Number.isFinite(Number.parseFloat(prevCutoff)) ? Number.parseFloat(prevCutoff) : null;
+      const nextCutoffNum = Number.isFinite(Number.parseFloat(nextCutoff)) ? Number.parseFloat(nextCutoff) : null;
+      if (nextCutoffNum !== null) {
+        // Keep the maximum cutoff seen (safest for "latest/strongest" display).
+        dept.cutoffs[caste] =
+          prevCutoffNum !== null ? Math.max(prevCutoffNum, nextCutoffNum) : nextCutoffNum;
+      } else if (prevCutoff === undefined) {
+        dept.cutoffs[caste] = '-';
+      }
+
+      if ((dept.ranks[caste] === undefined || dept.ranks[caste] === '-' || dept.ranks[caste] === null) && row.rank != null) {
+        dept.ranks[caste] = row.rank;
+      } else if (dept.ranks[caste] === undefined) {
+        dept.ranks[caste] = '-';
+      }
+
+      if ((dept.seats[caste] === undefined || dept.seats[caste] === '-' || dept.seats[caste] === null) && row.total_seats_in_dept != null) {
+        dept.seats[caste] = row.total_seats_in_dept;
+      } else if (dept.seats[caste] === undefined) {
+        dept.seats[caste] = '-';
+      }
+
+      if ((dept.seatsFilling[caste] === undefined || dept.seatsFilling[caste] === '-' || dept.seatsFilling[caste] === null) && row.seats_filling != null) {
+        dept.seatsFilling[caste] = row.seats_filling;
+      } else if (dept.seatsFilling[caste] === undefined) {
+        dept.seatsFilling[caste] = '-';
+      }
     }
   });
   Object.keys(collegeMap).forEach(code => {
@@ -84,23 +114,58 @@ const CollegeSearch = () => {
   const [selectedDetail, setSelectedDetail] = useState(null);
   const [showUnlock,     setShowUnlock]     = useState(false);
 
-  // ── Fetch college catalog (lightweight) ───────────────────────────────────
+  // ── Fetch college catalog (debounced + paginated; supports search) ─────────
   useEffect(() => {
-    const fetchData = async () => {
+    const controller = new AbortController();
+    const q = searchQuery.trim();
+
+    const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-        const res = await fetch(`${API_URL}/colleges/catalog?page=1&pageSize=2000`);
-        const json = await res.json();
-        setCatalog(json.data || []);
+        const API_BASE = getApiBase();
+        const pageSize = 2000; // backend clamps to max 2000
+        let page = 1;
+        let all = [];
+        let total = null;
+
+        // Pull the full catalog (or full searched catalog) so results are not missed
+        // when the colleges table has > 2000 rows.
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const url = new URL(joinApi(API_BASE, '/colleges/catalog'));
+          url.searchParams.set('page', String(page));
+          url.searchParams.set('pageSize', String(pageSize));
+          if (q) url.searchParams.set('search', q);
+
+          const res = await fetch(url.toString(), { signal: controller.signal });
+          if (!res.ok) throw new Error(`Catalog request failed: ${res.status}`);
+          const json = await res.json();
+          const batch = json?.data || [];
+          if (typeof json?.total === 'number') total = json.total;
+
+          all = all.concat(batch);
+          if (batch.length < pageSize) break;
+          if (total !== null && all.length >= total) break;
+          page += 1;
+          if (page > 1000) break;
+        }
+
+        setCatalog(all);
+        // keep detailsByCode cache; it will fill in as user expands
       } catch (err) {
-        console.error('Failed to fetch colleges catalog:', err);
+        if (err?.name !== 'AbortError') {
+          console.error('Failed to fetch colleges catalog:', err);
+        }
       } finally {
         setLoading(false);
       }
+    }, 300);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
     };
-    fetchData();
-  }, []);
+  }, [searchQuery]);
 
   // Combine catalog with loaded details (dropdown fetch is per-college)
   const directoryColleges = useMemo(() => {
@@ -114,8 +179,8 @@ const CollegeSearch = () => {
         location: c.college_address || '',
         departments: detail?.departments || [],
         rawRows: detail?.rawRows || [],
-        // minCutoff derived from loaded details, otherwise placeholder
-        minCutoff: detail?.minCutoff ?? '—',
+        // Entrance Cutoff removed from UI
+        minCutoff: '—',
       };
     });
   }, [catalog, detailsByCode]);
@@ -157,8 +222,9 @@ const CollegeSearch = () => {
     if (!code) return;
     if (detailsByCode[code]) return;
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${API_URL}/colleges/details/${code}`);
+      const API_BASE = getApiBase();
+      const res = await fetch(joinApi(API_BASE, `/colleges/details/${code}`));
+      if (!res.ok) throw new Error(`Details request failed: ${res.status}`);
       const json = await res.json();
       const rows = json?.data || [];
       const grouped = groupRawRows(rows);

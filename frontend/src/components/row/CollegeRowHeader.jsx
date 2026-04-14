@@ -1,12 +1,12 @@
 import React from 'react';
-import { School, MapPin, ChevronUp, ChevronDown } from 'lucide-react';
+import { School, MapPin } from 'lucide-react';
 
-export default function CollegeRowHeader({ college, isExpanded, setIsExpanded }) {
+export default function CollegeRowHeader({ college, isOpen, onViewDetails, onHideDetails }) {
   const deptCount = Array.isArray(college?.departments) ? college.departments.length : 0;
   return (
-    <div onClick={() => setIsExpanded(!isExpanded)} className="flex items-center justify-between p-6 cursor-pointer bg-white">
+    <div className="flex items-center justify-between p-6 bg-white">
       <div className="flex items-center gap-6 flex-1">
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${isExpanded ? 'bg-slate-900 text-white rotate-6' : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-slate-50 text-slate-400 border border-slate-100">
           <School size={28} />
         </div>
         <div>
@@ -20,12 +20,22 @@ export default function CollegeRowHeader({ college, isExpanded, setIsExpanded })
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-10">
-        <div className="text-right hidden md:block">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Entrance Cutoff</p>
-          <div className="flex items-baseline gap-1"><span className="text-2xl font-black text-slate-900 italic">≥</span><span className="text-3xl font-black text-blue-600 tabular-nums">{college.minCutoff}</span></div>
-        </div>
-        <div className={`p-2 rounded-full transition-all duration-500 ${isExpanded ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-300'}`}>{isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}</div>
+      <div className="flex items-center gap-6">
+        {isOpen ? (
+          <button
+            onClick={onHideDetails}
+            className="px-5 py-2.5 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all"
+          >
+            Hide
+          </button>
+        ) : (
+          <button
+            onClick={onViewDetails}
+            className="px-5 py-2.5 rounded-2xl bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200"
+          >
+            View Detail
+          </button>
+        )}
       </div>
     </div>
   );

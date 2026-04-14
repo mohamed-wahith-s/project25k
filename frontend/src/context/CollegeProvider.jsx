@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CollegeContext } from './CollegeContext';
 import { useAuth } from './AuthContext';
+import { getApiBase, joinApi } from '../utils/apiBase';
 
 export const CollegeProvider = ({ children }) => {
   const [collegedetails, setCollegedetails] = useState([]);
@@ -11,17 +12,12 @@ export const CollegeProvider = ({ children }) => {
     const fetchColleges = async () => {
       try {
         setLoadingColleges(true);
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_BASE = getApiBase();
         
-        // POST request to fetch all colleges
-        const response = await fetch(`${API_URL}/colleges`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ search: '' }) // Empty search to get all initially
-        });
+        // Get the colleges catalog (lightweight list)
+        const response = await fetch(joinApi(API_BASE, '/colleges/catalog?page=1&pageSize=2000'));
         
+        if (!response.ok) throw new Error(`Catalog request failed: ${response.status}`);
         const json = await response.json();
         
         if (json.success) {

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useState, useMemo } from 'react';
 import { Search, GraduationCap, Sun, UserCircle, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -38,16 +37,10 @@ const TNEADashboard = () => {
       setDetailLoading(true);
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       
-      const response = await fetch(`${API_URL}/colleges/details`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code: item.college_code })
-      });
+      const response = await fetch(`${API_URL}/colleges/details/${item.college_code}`);
       const json = await response.json();
 
-      if (json.success) {
+      if (json?.success) {
         setSelectedDetail({
           name: item.college_name,
           location: item.college_address,
@@ -204,17 +197,4 @@ const TableHeader = () => (
     <span className="text-right pr-6">Action</span>
   </div>
 );
-
-=======
-/* 
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, GraduationCap, Sun, UserCircle, Building } from 'lucide-react';
-... (rest of the code)
-*/
-
-const TNEADashboard = () => {
-  return null; // Commented out TNEA Hub
-};
-
->>>>>>> 15bca9c (Fetched Collge details from backend)
 export default TNEADashboard;

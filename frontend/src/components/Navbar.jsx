@@ -36,11 +36,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center space-x-8">
           <NavLink to="/" icon={<Home size={18} />} label="Home" active={isActive('/')} />
           <NavLink to="/search" icon={<Search size={18} />} label="Colleges" active={isActive('/search')} />
-<<<<<<< HEAD
           {/* {isSubscribed && (
-=======
-{/* {isSubscribed && (
->>>>>>> 15bca9c (Fetched Collge details from backend)
             <NavLink to="/tnea" icon={<GraduationCap size={18} />} label="TNEA Hub" active={isActive('/tnea')} />
           )} */}
           {!isSubscribed && (

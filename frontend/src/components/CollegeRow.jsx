@@ -1,22 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CollegeRowHeader from './row/CollegeRowHeader';
 import CollegeRowTable from './row/CollegeRowTable';
 
 export default function CollegeRow({ college, selectedCommunity, onViewProfile, onExpand }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const filteredDepartments = college.departments || [];
 
-  useEffect(() => {
-    if (isExpanded) onExpand?.(college);
-  }, [isExpanded, college, onExpand]);
+  const handleViewDetails = async () => {
+    await onExpand?.(college);
+    setIsOpen(true);
+  };
+
+  const handleHideDetails = () => setIsOpen(false);
 
   return (
     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-500 overflow-hidden group">
-      <CollegeRowHeader college={college} isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
+      <CollegeRowHeader
+        college={college}
+        isOpen={isOpen}
+        onViewDetails={handleViewDetails}
+        onHideDetails={handleHideDetails}
+      />
       <AnimatePresence>
-        {isExpanded && (
+        {isOpen && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-[#FCFDFF] border-t border-slate-50">
             <CollegeRowTable filteredDepartments={filteredDepartments} selectedCommunity={selectedCommunity} />
             <div className="p-6 bg-slate-50/50 flex items-center justify-between">
@@ -26,7 +34,6 @@ export default function CollegeRow({ college, selectedCommunity, onViewProfile, 
               </div>
               <button
                 onClick={(e) => {
-                  e.stopPropagation();
                   onViewProfile?.(college);
                 }}
                 className="text-[11px] font-black text-blue-600 uppercase tracking-widest hover:underline"
