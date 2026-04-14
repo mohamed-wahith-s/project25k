@@ -7,6 +7,9 @@ const { connectDB } = require('./db');
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const collegeRoutes = require('./routes/collegeRoutes');
+const authRoutes = require('./routes/authRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const departmentRoutes = require('./routes/departmentRoutes');
 
 const app = express();
 
@@ -16,6 +19,9 @@ app.use(cors());
 
 // Routes
 app.use('/api/colleges', collegeRoutes);
+app.use('/api/departments', departmentRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/payment', paymentRoutes);
 
 app.get('/', (req, res) => {
   res.send('PathFinder Supabase Backend is running ✅');
