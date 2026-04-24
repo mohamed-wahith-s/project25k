@@ -64,7 +64,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async (userData) => { /* logic... */ };
+  const signup = async (userData) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Signup failed');
+      setUser(data);
+      localStorage.setItem('user', JSON.stringify(data));
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  };
   const logout = () => { setUser(null); localStorage.removeItem('user'); };
   const updateUser = (data) => setUser(prev => {
     const updated = { ...prev, ...data };

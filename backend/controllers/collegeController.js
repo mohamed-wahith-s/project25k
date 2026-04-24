@@ -13,9 +13,6 @@ const clampInt = (value, fallback, min, max) => {
  */
 exports.getCollegesList = async (req, res) => {
   try {
-<<<<<<< HEAD
-    const { search } = req.body;
-=======
     const {
       cutoff_mark,
       caste_category,
@@ -34,27 +31,22 @@ exports.getCollegesList = async (req, res) => {
     const from = (pageNum - 1) * sizeNum;
     const to = from + sizeNum - 1;
 
-    // 0) First get total count safely (head request). This prevents PostgREST
-    // "Requested range not satisfiable" errors when clients request pages beyond the end.
+    // 0) First get total count safely (head request).
     let countQuery = supabase.from('cutoff_data').select('id', { count: 'exact', head: true });
 
-    // 1. Filter by Cutoff Mark (Greater than or equal to)
     if (cutoff_mark) {
       const cm = parseFloat(cutoff_mark);
       countQuery = countQuery.lte('cutoff_mark', cm);
     }
 
-    // 2. Filter by Caste Category
     if (caste_category && caste_category !== 'All') {
       countQuery = countQuery.eq('caste_category', caste_category);
     }
 
-    // 3. Optional Filter by Department ID
     if (dept_id && dept_id !== 'All') {
       countQuery = countQuery.eq('dept_id', dept_id);
     }
 
-    // 4. Optional filter by College Code / Subject Code
     if (college_code) {
       countQuery = countQuery.eq('college_code', college_code);
     }
@@ -62,11 +54,9 @@ exports.getCollegesList = async (req, res) => {
       countQuery = countQuery.eq('subject_code', subject_code);
     }
 
-    // 5. Optional Text Search (best-effort across embedded tables)
     if (search) {
       const s = String(search).trim();
       if (s.length > 0) {
-        // For counting, we can only reliably search base table fields.
         countQuery = countQuery.or([`subject_code.ilike.%${s}%`, `seats_filling.ilike.%${s}%`].join(','));
       }
     }
@@ -85,31 +75,33 @@ exports.getCollegesList = async (req, res) => {
         data: [],
       });
     }
->>>>>>> 2378897 (Latest commit)
 
     // Default query: Fetch institutions and their branch counts
     let query = supabase
       .from('colleges')
-      .select('*, cutoff_data(count)')
+      .select('*, cutoff_data!inner(count)', { count: 'exact' })
       .order('college_name', { ascending: true });
+
+    // Apply Department filter if provided
+    if (dept_id && dept_id !== 'All') {
+      query = query.eq('cutoff_data.dept_id', dept_id);
+    }
 
     // if search is provided, we search in institution details
     if (search) {
-      // Check if search matches college_name or college_code
       query = query.or(`college_name.ilike.%${search}%,college_code.ilike.%${search}%`);
-      
-      // Note: Full branch search (searching for "CSE" to find colleges) 
-      // is most efficiently done via a Database VIEW or RPC in Supabase 
-      // for large datasets. For now, we search within the institutions.
     }
 
-    const { data: colleges, error } = await query;
+    const { data: colleges, error } = await query.range(from, to);
 
     if (error) throw error;
 
     return res.status(200).json({
       success: true,
       count: colleges.length,
+      total,
+      page: pageNum,
+      pageSize: sizeNum,
       data: colleges
     });
   } catch (err) {
@@ -154,7 +146,6 @@ exports.getCollegeByCode = async (req, res) => {
       `)
       .in('college_code', codeVariants);
 
-<<<<<<< HEAD
     // Optional Filtering
     if (cutoff_mark) {
       query = query.lte('cutoff_mark', parseFloat(cutoff_mark));
@@ -171,60 +162,6 @@ exports.getCollegeByCode = async (req, res) => {
       success: true,
       count: details.length,
       data: details
-=======
-    // Re-apply filters for data query (including best-effort search across joins)
-    if (cutoff_mark) query = query.lte('cutoff_mark', parseFloat(cutoff_mark));
-    if (caste_category && caste_category !== 'All') query = query.eq('caste_category', caste_category);
-    if (dept_id && dept_id !== 'All') query = query.eq('dept_id', dept_id);
-    if (college_code) query = query.eq('college_code', college_code);
-    if (subject_code) query = query.eq('subject_code', subject_code);
-    if (search) {
-      const s = String(search).trim();
-      if (s.length > 0) {
-        query = query.or(
-          [
-            `subject_code.ilike.%${s}%`,
-            `seats_filling.ilike.%${s}%`,
-            `colleges.college_name.ilike.%${s}%`,
-            `departments.dept_name.ilike.%${s}%`,
-          ].join(',')
-        );
-      }
-    }
-
-    const safeSortBy = ['cutoff_mark', 'rank', 'dept_id', 'college_code', 'subject_code', 'id'].includes(sortBy)
-      ? sortBy
-      : 'cutoff_mark';
-    const ascending = String(sortOrder).toLowerCase() === 'asc';
-
-    const { data: cutoffResults, error } = await query
-      .order(safeSortBy, { ascending, nullsFirst: false })
-      .range(from, Math.min(to, total - 1));
-
-    if (error) {
-      throw error;
-    }
-
-    // Handle the case where no data is found
-    if (!cutoffResults || cutoffResults.length === 0) {
-      return res.status(200).json({
-        success: true,
-        count: 0,
-        total,
-        page: pageNum,
-        pageSize: sizeNum,
-        data: []
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      count: cutoffResults.length,
-      total,
-      page: pageNum,
-      pageSize: sizeNum,
-      data: cutoffResults
->>>>>>> 2378897 (Latest commit)
     });
   } catch (err) {
     console.error(`🔥 Error fetching details for college ${req.params.code}:`, err.message);
@@ -243,7 +180,7 @@ exports.getCollegeByCode = async (req, res) => {
  */
 exports.getCollegeCatalog = async (req, res) => {
   try {
-    const { search, page = '1', pageSize = '200' } = req.query;
+    const { search, dept_id, page = '1', pageSize = '200' } = req.query;
     const pageNum = clampInt(page, 1, 1, 100000);
     const sizeNum = clampInt(pageSize, 200, 1, 2000);
     const from = (pageNum - 1) * sizeNum;
@@ -252,8 +189,16 @@ exports.getCollegeCatalog = async (req, res) => {
     let query = supabase
       .from('colleges')
       .select('college_code,college_name,college_address', { count: 'exact' })
-      .order('college_name', { ascending: true })
-      .range(from, to);
+      .order('college_name', { ascending: true });
+
+    if (dept_id && dept_id !== 'All') {
+      // Use !inner to filter colleges that have this department in cutoff_data
+      query = supabase
+        .from('colleges')
+        .select('college_code,college_name,college_address, cutoff_data!inner(dept_id)', { count: 'exact' })
+        .eq('cutoff_data.dept_id', dept_id)
+        .order('college_name', { ascending: true });
+    }
 
     if (search) {
       const s = String(search).trim();
@@ -264,7 +209,7 @@ exports.getCollegeCatalog = async (req, res) => {
       }
     }
 
-    const { data, error, count } = await query;
+    const { data, error, count } = await query.range(from, to);
     if (error) throw error;
 
     return res.status(200).json({
@@ -332,6 +277,35 @@ exports.getCollegeDetails = async (req, res) => {
       success: false,
       message: 'Server error while fetching college details.',
       error: err.message,
+    });
+  }
+};
+
+/**
+ * @desc    Get all unique departments
+ * @route   GET /api/colleges/departments
+ * @access  Public
+ */
+exports.getDepartments = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*')
+      .order('dept_name', { ascending: true });
+
+    if (error) throw error;
+
+    return res.status(200).json({
+      success: true,
+      count: data.length,
+      data
+    });
+  } catch (err) {
+    console.error('🔥 Error fetching departments:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching departments.',
+      error: err.message
     });
   }
 };

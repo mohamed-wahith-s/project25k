@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input, Card } from '../components/ui';
-import { GraduationCap, User, Lock, Mail } from 'lucide-react';
+import { GraduationCap, User, Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const LoginPage = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -72,12 +73,19 @@ const LoginPage = () => {
                   <Lock size={18} />
                 </div>
                 <Input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-11"
+                  className="pl-11 pr-11"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-primary-500 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 

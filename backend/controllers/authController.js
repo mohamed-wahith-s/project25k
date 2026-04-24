@@ -13,17 +13,17 @@ const generateToken = (id) => {
 //  @access  Public
 // ─────────────────────────────────────────────────────────────
 const registerUser = async (req, res) => {
-  const { name, email, phone, password } = req.body;
+  const { name, email, phone, password, date_of_birth } = req.body;
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'Name, email, and password are required.' });
+  if (!name || !email || !password || !date_of_birth) {
+    return res.status(400).json({ message: 'Name, email, password, and Date of Birth are required.' });
   }
 
   try {
     // Check if user already exists (by email)
     const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
+      .from('user_applications')
+      .select('user_id')
       .eq('email', email)
       .single();
 
@@ -37,12 +37,13 @@ const registerUser = async (req, res) => {
 
     // Insert new user
     const { data: user, error } = await supabase
-      .from('users')
+      .from('user_applications')
       .insert([
         {
-          username: name,
+          full_name: name,
           email,
-          phone: phone || null,
+          mobile_number: phone || null,
+          date_of_birth,
           password: hashedPassword,
         }
       ])
@@ -52,12 +53,13 @@ const registerUser = async (req, res) => {
     if (error) throw error;
 
     return res.status(201).json({
-      id: user.id,
-      name: user.username,
+      id: user.user_id,
+      name: user.full_name,
       email: user.email,
-      phone: user.phone,
-      isSubscribed: user.is_subscribed,
-      token: generateToken(user.id),
+      phone: user.mobile_number,
+      dob: user.date_of_birth,
+      isSubscribed: user.is_paid,
+      token: generateToken(user.user_id),
     });
   } catch (error) {
     console.error('Register error:', error.message);
@@ -77,12 +79,17 @@ const loginUser = async (req, res) => {
   }
 
   try {
+    console.log('Login attempt for:', identifier);
     // Find user by email OR phone
     const { data: user, error } = await supabase
-      .from('users')
+      .from('user_applications')
       .select('*')
-      .or(`email.eq.${identifier},phone.eq.${identifier}`)
+      .or(`email.eq."${identifier}",mobile_number.eq."${identifier}"`)
       .single();
+
+    if (error) {
+      console.log('User search error:', error.message);
+    }
 
     if (error || !user) {
       return res.status(401).json({ message: 'Invalid email/phone or password.' });
@@ -94,19 +101,17 @@ const loginUser = async (req, res) => {
     }
 
     return res.json({
-      id: user.id,
-      name: user.username,
+      id: user.user_id,
+      name: user.full_name,
       email: user.email,
-      phone: user.phone,
-      studentName: user.student_name,
-      cutoff: user.cutoff,
-      marks: user.marks,
-      caste: user.caste,
-      religion: user.religion,
-      isSubscribed: user.is_subscribed,
-      subscriptionPlan: user.subscription_plan,
-      subscriptionMetadata: user.subscription_metadata,
-      token: generateToken(user.id),
+      phone: user.mobile_number,
+      studentName: user.full_name,
+      cutoff: user.cutoff_mark || null,
+      marks: user.physics_mark + user.chemistry_mark + user.maths_mark || null,
+      caste: user.caste_category,
+      dob: user.date_of_birth,
+      isSubscribed: user.is_paid,
+      token: generateToken(user.user_id),
     });
   } catch (error) {
     console.error('Login error:', error.message);
@@ -129,24 +134,19 @@ const updateProfile = async (req, res) => {
 
     // Build update payload — map metadata fields to DB columns
     const updatePayload = {
-      subscription_metadata: metadata,
       updated_at: new Date().toISOString(),
     };
 
-    // Also promote key fields to top-level columns for querying
-    if (metadata.marks   !== undefined) updatePayload.marks    = parseFloat(metadata.marks)   || null;
-    if (metadata.cutoff  !== undefined) updatePayload.cutoff   = parseFloat(metadata.cutoff)  || null;
-    if (metadata.caste   !== undefined) updatePayload.caste    = metadata.caste   || null;
-    if (metadata.religion !== undefined) updatePayload.religion = metadata.religion || null;
-    if (metadata.counselingRank !== undefined) updatePayload.counseling_rank = parseInt(metadata.counselingRank) || null;
-    if (metadata.address !== undefined) updatePayload.address  = metadata.address || null;
-    if (metadata.dateOfBirth !== undefined) updatePayload.date_of_birth = metadata.dateOfBirth || null;
-    if (metadata.alternatePhone !== undefined) updatePayload.alternate_phone = metadata.alternatePhone || null;
+    if (metadata.studentName) updatePayload.full_name = metadata.studentName;
+    if (metadata.physics_mark) updatePayload.physics_mark = metadata.physics_mark;
+    if (metadata.chemistry_mark) updatePayload.chemistry_mark = metadata.chemistry_mark;
+    if (metadata.maths_mark) updatePayload.maths_mark = metadata.maths_mark;
+    if (metadata.caste) updatePayload.caste_category = metadata.caste;
 
     const { data: updatedUser, error } = await supabase
-      .from('users')
+      .from('user_applications')
       .update(updatePayload)
-      .eq('id', userId)
+      .eq('user_id', userId)
       .select()
       .single();
 
@@ -154,19 +154,13 @@ const updateProfile = async (req, res) => {
     if (!updatedUser) return res.status(404).json({ message: 'User not found.' });
 
     return res.json({
-      id: updatedUser.id,
-      name: updatedUser.username,
+      id: updatedUser.user_id,
+      name: updatedUser.full_name,
       email: updatedUser.email,
-      phone: updatedUser.phone,
-      studentName: updatedUser.student_name,
-      cutoff: updatedUser.cutoff,
-      marks: updatedUser.marks,
-      caste: updatedUser.caste,
-      religion: updatedUser.religion,
-      isSubscribed: updatedUser.is_subscribed,
-      subscriptionPlan: updatedUser.subscription_plan,
-      subscriptionMetadata: updatedUser.subscription_metadata,
-      token: generateToken(updatedUser.id),
+      phone: updatedUser.mobile_number,
+      studentName: updatedUser.full_name,
+      isSubscribed: updatedUser.is_paid,
+      token: generateToken(updatedUser.user_id),
     });
   } catch (error) {
     console.error('Update profile error:', error.message);

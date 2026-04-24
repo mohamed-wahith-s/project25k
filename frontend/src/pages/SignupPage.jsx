@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input, Card } from '../components/ui';
-import { User, Mail, Phone, Lock, UserPlus, GraduationCap } from 'lucide-react';
+import { User, Mail, Phone, Lock, UserPlus, GraduationCap, Eye, EyeOff, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const SignupPage = () => {
@@ -10,8 +10,10 @@ const SignupPage = () => {
     username: '',
     email: '',
     phone: '',
+    dob: '',
     password: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
@@ -24,9 +26,9 @@ const SignupPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { username, email, phone, password } = formData;
+    const { username, email, phone, dob, password } = formData;
     
-    if (!username || !email || !phone || !password) {
+    if (!username || !email || !phone || !dob || !password) {
       setError('Please fill in all fields');
       return;
     }
@@ -38,6 +40,7 @@ const SignupPage = () => {
         name: formData.username,
         email: formData.email,
         phone: formData.phone,
+        date_of_birth: formData.dob,
         password: formData.password
       });
       navigate('/');
@@ -116,6 +119,21 @@ const SignupPage = () => {
                 />
               </div>
 
+              {/* Date of Birth Field */}
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary-500 transition-colors">
+                  <Calendar size={18} />
+                </div>
+                <Input
+                  name="dob"
+                  type="date"
+                  placeholder="Date of Birth"
+                  value={formData.dob}
+                  onChange={handleChange}
+                  className="pl-11 text-slate-500"
+                />
+              </div>
+
               {/* Password Field */}
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary-500 transition-colors">
@@ -123,12 +141,19 @@ const SignupPage = () => {
                 </div>
                 <Input
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="pl-11"
+                  className="pl-11 pr-11"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-primary-500 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
