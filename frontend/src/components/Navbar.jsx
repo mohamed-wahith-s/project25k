@@ -292,6 +292,68 @@ const Navbar = () => {
         </div>
       </nav>
 
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[55] bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-[0_-4px_20px_rgba(99,102,241,0.08)] safe-area-inset-bottom">
+        <div className="flex items-center justify-around px-4 py-2">
+          {/* Home */}
+          <Link
+            to="/"
+            id="mobile-nav-home"
+            className={`relative flex flex-col items-center gap-0.5 px-4 py-2 rounded-2xl transition-all duration-200 ${
+              isActive('/') ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-400'
+            }`}
+          >
+            {isActive('/') && (
+              <span className="absolute inset-0 rounded-2xl bg-indigo-50 -z-10" />
+            )}
+            <Home size={22} strokeWidth={isActive('/') ? 2.5 : 2} />
+            <span className={`text-[10px] font-black tracking-wide ${isActive('/') ? 'text-indigo-600' : 'text-slate-400'}`}>Home</span>
+          </Link>
+
+          {/* Colleges / Search */}
+          <Link
+            to="/search"
+            id="mobile-nav-colleges"
+            className={`relative flex flex-col items-center gap-0.5 px-4 py-2 rounded-2xl transition-all duration-200 ${
+              isActive('/search') ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-400'
+            }`}
+          >
+            {isActive('/search') && (
+              <span className="absolute inset-0 rounded-2xl bg-indigo-50 -z-10" />
+            )}
+            <GraduationCap size={22} strokeWidth={isActive('/search') ? 2.5 : 2} />
+            <span className={`text-[10px] font-black tracking-wide ${isActive('/search') ? 'text-indigo-600' : 'text-slate-400'}`}>Colleges</span>
+          </Link>
+
+          {/* Subscribe / Pro */}
+          {!isSubscribed ? (
+            <Link
+              to="/subscribe"
+              id="mobile-nav-subscribe"
+              className={`relative flex flex-col items-center gap-0.5 px-4 py-2 rounded-2xl transition-all duration-200 ${
+                isActive('/subscribe') ? 'text-amber-500' : 'text-slate-400 hover:text-amber-400'
+              }`}
+            >
+              {isActive('/subscribe') && (
+                <span className="absolute inset-0 rounded-2xl bg-amber-50 -z-10" />
+              )}
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <Star size={22} strokeWidth={2} className="text-amber-400 fill-amber-300" />
+              </motion.div>
+              <span className="text-[10px] font-black tracking-wide text-amber-500">Go Pro</span>
+            </Link>
+          ) : (
+            <div className="flex flex-col items-center gap-0.5 px-4 py-2">
+              <Star size={22} strokeWidth={2} className="text-amber-400 fill-amber-300" />
+              <span className="text-[10px] font-black tracking-wide text-amber-500">Pro ✓</span>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Settings drawer — rendered outside nav so it overlays everything */}
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>

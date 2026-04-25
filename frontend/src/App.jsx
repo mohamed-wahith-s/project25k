@@ -36,7 +36,7 @@ const App = () => {
           <Router>
             <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-blue-100">
               <Navbar />
-              <main className="flex-1">
+              <main className="flex-1 pb-20 md:pb-0">
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
