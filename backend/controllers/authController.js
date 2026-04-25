@@ -52,13 +52,23 @@ const registerUser = async (req, res) => {
 
     if (error) throw error;
 
+    let isSubscribed = false;
+    if (user.is_paid && user.last_paid_date) {
+      const paidDate = new Date(user.last_paid_date);
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      if (paidDate > threeMonthsAgo) {
+        isSubscribed = true;
+      }
+    }
+
     return res.status(201).json({
       id: user.user_id,
       name: user.full_name,
       email: user.email,
       phone: user.mobile_number,
       dob: user.date_of_birth,
-      isSubscribed: user.is_paid,
+      isSubscribed,
       token: generateToken(user.user_id),
     });
   } catch (error) {
@@ -100,6 +110,16 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email/phone or password.' });
     }
 
+    let isSubscribed = false;
+    if (user.is_paid && user.last_paid_date) {
+      const paidDate = new Date(user.last_paid_date);
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      if (paidDate > threeMonthsAgo) {
+        isSubscribed = true;
+      }
+    }
+
     return res.json({
       id: user.user_id,
       name: user.full_name,
@@ -110,7 +130,7 @@ const loginUser = async (req, res) => {
       marks: user.physics_mark + user.chemistry_mark + user.maths_mark || null,
       caste: user.caste_category,
       dob: user.date_of_birth,
-      isSubscribed: user.is_paid,
+      isSubscribed,
       token: generateToken(user.user_id),
     });
   } catch (error) {
@@ -153,13 +173,23 @@ const updateProfile = async (req, res) => {
     if (error) throw error;
     if (!updatedUser) return res.status(404).json({ message: 'User not found.' });
 
+    let isSubscribed = false;
+    if (updatedUser.is_paid && updatedUser.last_paid_date) {
+      const paidDate = new Date(updatedUser.last_paid_date);
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      if (paidDate > threeMonthsAgo) {
+        isSubscribed = true;
+      }
+    }
+
     return res.json({
       id: updatedUser.user_id,
       name: updatedUser.full_name,
       email: updatedUser.email,
       phone: updatedUser.mobile_number,
       studentName: updatedUser.full_name,
-      isSubscribed: updatedUser.is_paid,
+      isSubscribed,
       token: generateToken(updatedUser.user_id),
     });
   } catch (error) {

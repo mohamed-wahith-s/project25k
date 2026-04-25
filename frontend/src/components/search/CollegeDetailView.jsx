@@ -58,16 +58,6 @@ export default function CollegeDetailView({ item, onClose, onSubscribe }) {
                 </h3>
                 <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-2 ml-13">Select a category to compare different branches</p>
               </div>
-              
-              {!item.isSubscribed && (
-                <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 px-6 py-4 rounded-3xl text-white flex items-center gap-6 shadow-xl shadow-indigo-200">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-black uppercase tracking-widest opacity-80">Premium Access</span>
-                    <span className="text-sm font-bold">Unlock Round 2 & 3 Data</span>
-                  </div>
-                  <button onClick={onSubscribe} className="bg-white text-indigo-600 px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 transition-transform">Upgrade</button>
-                </div>
-              )}
             </div>
             
             <BranchComparisonTable rawRows={rawRows} departments={departments} />

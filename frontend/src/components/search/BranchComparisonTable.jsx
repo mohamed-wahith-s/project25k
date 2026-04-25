@@ -27,13 +27,12 @@ export default function BranchComparisonTable({ rawRows = [], departments = [] }
     return (
       <div className="w-full bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-xl shadow-slate-100/50">
         {/* Table header */}
-        <div className="grid grid-cols-[2.5fr_80px_140px_140px_110px_140px] px-6 py-4 bg-slate-900 text-[10px] font-black text-slate-400 uppercase tracking-[0.18em]">
+        <div className="grid grid-cols-[2.5fr_80px_140px_140px_140px] px-6 py-4 bg-slate-900 text-[10px] font-black text-slate-400 uppercase tracking-[0.18em]">
           <span>Branch / Caste Category</span>
           <span className="text-center">Code</span>
           <span className="text-center">Cutoff Mark</span>
           <span className="text-center">Rank</span>
-          <span className="text-center">Total Seats</span>
-          <span className="text-center">Seats Status</span>
+          <span className="text-center">Available Seats</span>
         </div>
 
         <div className="divide-y divide-slate-100">
@@ -42,7 +41,7 @@ export default function BranchComparisonTable({ rawRows = [], departments = [] }
               {/* Branch header row */}
               <button
                 onClick={() => setExpandedBranch(expandedBranch === bIdx ? null : bIdx)}
-                className="w-full grid grid-cols-[2.5fr_80px_140px_140px_110px_140px] px-6 py-4 bg-slate-50 hover:bg-indigo-50 transition-colors items-center text-left group"
+                className="w-full grid grid-cols-[2.5fr_80px_140px_140px_140px] px-6 py-4 bg-slate-50 hover:bg-indigo-50 transition-colors items-center text-left group"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-indigo-500 group-hover:scale-125 transition-transform"></div>
@@ -55,7 +54,7 @@ export default function BranchComparisonTable({ rawRows = [], departments = [] }
                     {branch.code}
                   </span>
                 </div>
-                <div className="text-center col-span-3">
+                <div className="text-center col-span-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     {branch.rows.length} categories
                   </span>
@@ -73,19 +72,12 @@ export default function BranchComparisonTable({ rawRows = [], departments = [] }
                 const caste   = row.caste_category || '—';
                 const cutoff  = row.cutoff_mark  != null ? row.cutoff_mark  : '—';
                 const rank    = row.rank          != null ? row.rank          : '—';
-                const seats   = row.total_seats_in_dept ?? '—';
-                const status  = row.seats_filling || '—';
-
-                const statusColor =
-                  status === 'FULL'         ? 'bg-red-50 text-red-600 border-red-100'
-                : status === 'NEARLY FULL'  ? 'bg-amber-50 text-amber-600 border-amber-100'
-                : status === 'PARTIAL'      ? 'bg-blue-50 text-blue-600 border-blue-100'
-                : 'bg-slate-50 text-slate-400 border-slate-100';
+                const availableSeats = row.seats_filling || '—';
 
                 return (
                   <div
                     key={rIdx}
-                    className="grid grid-cols-[2.5fr_80px_140px_140px_110px_140px] px-6 py-3.5 items-center bg-white hover:bg-slate-50 transition-colors border-t border-slate-50"
+                    className="grid grid-cols-[2.5fr_80px_140px_140px_140px] px-6 py-3.5 items-center bg-white hover:bg-slate-50 transition-colors border-t border-slate-50"
                   >
                     {/* Caste label */}
                     <div className="pl-8 flex items-center gap-2">
@@ -113,15 +105,10 @@ export default function BranchComparisonTable({ rawRows = [], departments = [] }
                       <span className="text-[13px] font-black text-slate-700">{rank}</span>
                     </div>
 
-                    {/* Total Seats */}
-                    <div className="text-center">
-                      <span className="text-[14px] font-black text-indigo-600">{seats}</span>
-                    </div>
-
-                    {/* Seats Status */}
+                    {/* Available Seats */}
                     <div className="flex justify-center">
-                      <span className={`px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${statusColor}`}>
-                        {status}
+                      <span className="px-3 py-1 rounded-full border bg-slate-50 text-slate-600 border-slate-200 text-[11px] font-black uppercase tracking-widest shadow-sm">
+                        {availableSeats}
                       </span>
                     </div>
                   </div>

@@ -212,14 +212,32 @@ const CollegeSearch = () => {
   const filteredData = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return directoryColleges;
+
+    const normalizedQuery = q.replace(/^0+/, '');
+    const isNumeric = /^\d+$/.test(q);
+
+    // 1. Strict Code Match (e.g., search "02" -> matches "2" exactly)
+    if (isNumeric) {
+      const strictMatches = directoryColleges.filter(item => {
+        const itemCode = String(item.college_code || "").toLowerCase().replace(/^0+/, '');
+        return itemCode === normalizedQuery;
+      });
+      if (strictMatches.length > 0) return strictMatches;
+    }
+
+    // 2. Broad Search (Fallback)
     return directoryColleges.filter(item => {
+      const itemCode = String(item.college_code || "").toLowerCase();
+      const itemName = String(item.name || "").toLowerCase();
+      const itemLoc  = String(item.location || "").toLowerCase();
+
       const deptMatch = (item.departments || []).some((d) =>
-        [d.branchName, d.code].some((s) => s?.toLowerCase().includes(q))
+        [String(d.branchName || ""), String(d.code || "")].some((s) => 
+          s.toLowerCase().includes(q)
+        )
       );
-      return (
-        [item.name, item.location, item.college_code].some((s) => s?.toLowerCase().includes(q)) ||
-        deptMatch
-      );
+      
+      return itemName.includes(q) || itemLoc.includes(q) || itemCode.includes(q) || deptMatch;
     });
   }, [searchQuery, directoryColleges]);
 
@@ -236,18 +254,26 @@ const CollegeSearch = () => {
   };
 
   // ── View More ─────────────────────────────────────────────────────────────
-   const handleViewMore = (college) => {
+  const handleViewMore = async (college) => {
     if (!isSubscribed) {
       setShowUnlock(true);
       return;
     }
-    setSelectedDetail(college);
+    
+    // Fetch details immediately before showing
+    let details = await fetchCollegeDetailsIfNeeded(college);
+    
+    setSelectedDetail({
+      ...college,
+      departments: details?.departments || college.departments || [],
+      rawRows: details?.rawRows || college.rawRows || []
+    });
   };
 
   const fetchCollegeDetailsIfNeeded = async (college) => {
     const code = college?.college_code || college?.code;
-    if (!code) return;
-    if (detailsByCode[code]) return;
+    if (!code) return null;
+    if (detailsByCode[code]) return detailsByCode[code];
     try {
       const API_BASE = getApiBase();
       const res = await fetch(joinApi(API_BASE, `/colleges/details/${code}`));
@@ -257,8 +283,9 @@ const CollegeSearch = () => {
       const grouped = groupRawRows(rows);
       const one = grouped[code];
       if (!one) {
-        setDetailsByCode((prev) => ({ ...prev, [code]: { departments: [], rawRows: [], minCutoff: '—' } }));
-        return;
+        const empty = { departments: [], rawRows: [], minCutoff: '—' };
+        setDetailsByCode((prev) => ({ ...prev, [code]: empty }));
+        return empty;
       }
       const cutoffs = (one.departments || [])
         .map((d) => {
@@ -269,12 +296,15 @@ const CollegeSearch = () => {
         .filter((n) => n !== null);
       const minCutoff = cutoffs.length ? Math.max(...cutoffs).toFixed(1) : '—';
 
+      const finalDetails = { ...one, minCutoff };
       setDetailsByCode((prev) => ({
         ...prev,
-        [code]: { ...one, minCutoff },
+        [code]: finalDetails,
       }));
+      return finalDetails;
     } catch (e) {
       console.error('Failed to fetch college details:', e);
+      return null;
     }
   };
 

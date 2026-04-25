@@ -19,12 +19,69 @@ const ProfilePage = () => {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSave = (e) => {
+  const [loadingPayment, setLoadingPayment] = useState(false);
+
+  const handleSave = async (e) => {
     e.preventDefault();
-    const studentCutoff = (parseFloat(formData.physics || 0) + parseFloat(formData.chemistry || 0)) / 2 + parseFloat(formData.maths || 0);
-    subscribe({ ...formData, cutoff: studentCutoff });
-    alert("Profile saved! Your directory is now personalized.");
-    navigate('/search');
+    setLoadingPayment(true);
+    
+    try {
+      const { loadRazorpayScript } = await import('../utils/razorpayUtils');
+      if (!await loadRazorpayScript()) return alert('Razorpay failed to load.');
+      
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const studentCutoff = (parseFloat(formData.physics || 0) + parseFloat(formData.chemistry || 0)) / 2 + parseFloat(formData.maths || 0);
+      const metadata = { ...formData, cutoff: studentCutoff };
+
+      // Amount is exactly 200 INR
+      const amount = 200;
+
+      const orderRes = await fetch(`${API_URL}/payment/create-order`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` }, 
+        body: JSON.stringify({ planId: 'premium', amount, metadata }) 
+      });
+      const orderData = await orderRes.json();
+      
+      if (!orderData.success) {
+         throw new Error(orderData.message || 'Failed to create order');
+      }
+
+      const options = { 
+        key: orderData.key_id, 
+        amount: orderData.order.amount, 
+        currency: orderData.order.currency, 
+        name: 'PathFinder Premium', 
+        order_id: orderData.order.id, 
+        prefill: { name: user.name, email: user.email }, 
+        theme: { color: '#4f46e5' },
+        handler: async (res) => {
+          const vRes = await fetch(`${API_URL}/payment/verify`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` }, 
+            body: JSON.stringify({ 
+              razorpay_payment_id: res.razorpay_payment_id, 
+              razorpay_order_id: res.razorpay_order_id, 
+              razorpay_signature: res.razorpay_signature, 
+              planId: 'premium', 
+              metadata 
+            }) 
+          });
+          if (vRes.ok) { 
+            subscribe({ ...formData, cutoff: studentCutoff }); 
+            alert("Payment successful! Profile saved and Premium activated.");
+            navigate('/search'); 
+          } else {
+            alert('Payment Verification Failed!');
+          }
+        }
+      };
+      new window.Razorpay(options).open();
+    } catch (err) { 
+      alert(`Error: ${err.message}`); 
+    } finally { 
+      setLoadingPayment(false); 
+    }
   };
 
   return (
@@ -37,7 +94,7 @@ const ProfilePage = () => {
         </div>
         <AcademicScores formData={formData} handleChange={handleChange} />
         <div className="flex items-center justify-end gap-4 pt-4">
-          <Button type="submit" className="px-10 py-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 shadow-xl shadow-slate-200 text-lg">
+          <Button type="submit" isLoading={loadingPayment} className="px-10 py-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 shadow-xl shadow-slate-200 text-lg">
             Complete Profile & Upgrade <Sparkles size={18} className="ml-2" />
           </Button>
         </div>

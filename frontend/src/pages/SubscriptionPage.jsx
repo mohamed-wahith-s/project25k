@@ -11,9 +11,7 @@ import PlanGrid from '../components/subscription/PlanGrid';
 import MetadataForm from '../components/subscription/MetadataForm';
 
 const plans = [
-  { id: 'weekly', name: 'Weekly Sprint', price: '$9.90', period: 'per week', description: 'Perfect for quick admissions and last-minute applications.', features: ['Full College Database', '2 Expert Consultations', 'Scholarship Matches'], variant: 'secondary' },
-  { id: 'monthly', name: 'Monthly Pro', price: '$29.90', period: 'per month', description: 'Our most popular plan for serious students seeking the best.', features: ['Everything in Weekly', 'Unlimited Consultations', 'Direct Admission Routes', 'AI Application Assistant'], recommended: true, variant: 'premium' },
-  { id: 'yearly', name: 'Annual Pass', price: '$199.90', period: 'per year', description: 'Comprehensive 4-year plan for career and college guidance.', features: ['Everything in Monthly', 'Gap Year Counseling', 'Internship Placements', 'Lifetime Alumni Network'], variant: 'secondary' }
+  { id: 'premium', name: 'Premium Access', price: '₹200', period: 'for 3 months', description: 'Unlock full access to Round 2 & 3 cutoff data, AI assistant, and direct admission routes.', features: ['Full College Database', 'Round 2 & 3 Cutoff Data', 'AI Application Assistant', 'Unlimited Consultations'], recommended: true, variant: 'premium' }
 ];
 
 const SubscriptionPage = () => {
@@ -26,21 +24,30 @@ const SubscriptionPage = () => {
   const [metadata, setMetadata] = useState({ marks: '', cutoff: '', counselingRank: '', caste: '', religion: '', address: '', dateOfBirth: '', alternatePhone: '' });
   const navigate = useNavigate();
 
-  const handlePlanSelect = (id, price) => { setSelectedPlanId(id); setSelectedPlanAmount(Math.round(parseFloat(price.replace('$', '')) * 80)); setShowMetadataForm(true); };
+  const handlePlanSelect = (id) => { setSelectedPlanId(id); setSelectedPlanAmount(200); setShowMetadataForm(true); };
   const handleMetadataChange = (e) => setMetadata({ ...metadata, [e.target.name]: e.target.value });
 
   const handleSubscribe = async (e) => {
     e.preventDefault(); if (!metadata.marks || !metadata.cutoff || !metadata.caste) return alert('Please fill required details.');
-    setLoadingPlan(selectedPlanId);
+    setLoadingPlan(selectedPlanId || 'premium');
     try {
       if (!await loadRazorpayScript()) return alert('Razorpay failed to load.');
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const orderRes = await fetch(`${API_URL}/payment/create-order`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` }, body: JSON.stringify({ planId: selectedPlanId, amount: selectedPlanAmount, metadata }) });
+      
+      // Amount is exactly 200 INR
+      const amount = 200;
+
+      const orderRes = await fetch(`${API_URL}/payment/create-order`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` }, body: JSON.stringify({ planId: 'premium', amount, metadata }) });
       const orderData = await orderRes.json();
-      const options = { key: orderData.key_id, amount: orderData.order.amount, currency: orderData.order.currency, name: 'College Diaries', order_id: orderData.order.id, prefill: { name: user.name, email: user.email }, theme: { color: '#4f46e5' },
+      
+      if (!orderData.success) {
+         throw new Error(orderData.message || 'Failed to create order');
+      }
+
+      const options = { key: orderData.key_id, amount: orderData.order.amount, currency: orderData.order.currency, name: 'PathFinder Premium', order_id: orderData.order.id, prefill: { name: user.name, email: user.email }, theme: { color: '#4f46e5' },
         handler: async (res) => {
-          const vRes = await fetch(`${API_URL}/payment/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` }, body: JSON.stringify({ razorpay_payment_id: res.razorpay_payment_id, razorpay_order_id: res.razorpay_order_id, razorpay_signature: res.razorpay_signature, planId: selectedPlanId, metadata }) });
-          if (vRes.ok) { subscribe({ subscriptionPlan: selectedPlanId, subscriptionMetadata: metadata }); navigate('/search'); } else alert('Verification Failed!');
+          const vRes = await fetch(`${API_URL}/payment/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` }, body: JSON.stringify({ razorpay_payment_id: res.razorpay_payment_id, razorpay_order_id: res.razorpay_order_id, razorpay_signature: res.razorpay_signature, planId: 'premium', metadata }) });
+          if (vRes.ok) { subscribe({ subscriptionPlan: 'premium', subscriptionMetadata: metadata }); navigate('/search'); } else alert('Verification Failed!');
         }
       };
       new window.Razorpay(options).open();

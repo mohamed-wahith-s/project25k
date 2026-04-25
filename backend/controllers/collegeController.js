@@ -203,9 +203,19 @@ exports.getCollegeCatalog = async (req, res) => {
     if (search) {
       const s = String(search).trim();
       if (s.length > 0) {
-        query = query.or(
-          [`college_code.ilike.%${s}%`, `college_name.ilike.%${s}%`, `college_address.ilike.%${s}%`].join(',')
-        );
+        const conditions = [
+          `college_code.ilike.%${s}%`,
+          `college_name.ilike.%${s}%`,
+          `college_address.ilike.%${s}%`
+        ];
+
+        // Handle leading zeros (e.g., search "02" should match college_code "2")
+        const normalizedSearch = s.replace(/^0+/, '');
+        if (normalizedSearch && normalizedSearch !== s) {
+          conditions.push(`college_code.eq.${normalizedSearch}`);
+        }
+
+        query = query.or(conditions.join(','));
       }
     }
 

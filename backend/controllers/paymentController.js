@@ -14,6 +14,7 @@ const createOrder = async (req, res) => {
   }
 
   try {
+    console.log('Using Key ID:', process.env.RAZORPAY_KEY_ID);
     const razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
       key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -70,30 +71,28 @@ const verifyPayment = async (req, res) => {
 
     // 2. Build subscription update payload from metadata
     const updatePayload = {
-      is_subscribed: true,
-      subscription_plan: planId,
-      payment_id: razorpay_payment_id,
-      subscription_metadata: metadata || {},
+      is_paid: true,
+      last_paid_date: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
     // Promote key academic fields from metadata to top-level columns
     if (metadata) {
-      if (metadata.marks)          updatePayload.marks           = parseFloat(metadata.marks)         || null;
-      if (metadata.cutoff)         updatePayload.cutoff          = parseFloat(metadata.cutoff)        || null;
-      if (metadata.caste)          updatePayload.caste           = metadata.caste;
+      if (metadata.marks)          updatePayload.physics_mark    = parseFloat(metadata.marks)         || null; // just an approximation if they enter total
+      if (metadata.cutoff)         updatePayload.cutoff_mark     = parseFloat(metadata.cutoff)        || null;
+      if (metadata.caste)          updatePayload.caste_category  = metadata.caste;
       if (metadata.religion)       updatePayload.religion        = metadata.religion;
-      if (metadata.counselingRank) updatePayload.counseling_rank = parseInt(metadata.counselingRank)  || null;
+      if (metadata.counselingRank) updatePayload.tnea_ranking    = parseInt(metadata.counselingRank)  || null;
       if (metadata.address)        updatePayload.address         = metadata.address;
       if (metadata.dateOfBirth)    updatePayload.date_of_birth   = metadata.dateOfBirth;
-      if (metadata.alternatePhone) updatePayload.alternate_phone = metadata.alternatePhone;
+      if (metadata.alternatePhone) updatePayload.alternative_mobile = metadata.alternatePhone;
     }
 
     // 3. Update user in Supabase
     const { data: updatedUser, error } = await supabase
-      .from('users')
+      .from('user_applications')
       .update(updatePayload)
-      .eq('id', req.user.id)
+      .eq('user_id', req.user.id)
       .select()
       .single();
 
@@ -106,15 +105,13 @@ const verifyPayment = async (req, res) => {
       success: true,
       message: 'Payment verified and subscription activated successfully.',
       user: {
-        id: updatedUser.id,
-        name: updatedUser.username,
+        id: updatedUser.user_id,
+        name: updatedUser.full_name,
         email: updatedUser.email,
-        isSubscribed: updatedUser.is_subscribed,
-        subscriptionPlan: updatedUser.subscription_plan,
-        subscriptionMetadata: updatedUser.subscription_metadata,
-        cutoff: updatedUser.cutoff,
-        caste: updatedUser.caste,
-        marks: updatedUser.marks,
+        isSubscribed: updatedUser.is_paid,
+        cutoff: updatedUser.cutoff_mark,
+        caste: updatedUser.caste_category,
+        marks: updatedUser.physics_mark,
       },
     });
   } catch (error) {

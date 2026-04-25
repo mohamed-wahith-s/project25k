@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Building, CheckCircle2, ChevronsUpDown } from 'lucide-react';
+import { MapPin, Building, CheckCircle2, ChevronsUpDown, ArrowRight } from 'lucide-react';
 
 const TNEAResultRow = ({ college, onClick }) => {
   return (
@@ -39,8 +39,8 @@ const TNEAResultRow = ({ college, onClick }) => {
           onClick={onClick}
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm hover:shadow-indigo-200 transition-all duration-200 flex items-center gap-2"
         >
-          View More
-          <ChevronsUpDown size={12} className="opacity-70" />
+          View Full Profile
+          <ArrowRight size={12} className="opacity-70" />
         </button>
       </div>
     </div>

@@ -21,14 +21,27 @@ const TNEADashboard = () => {
   const filteredData = useMemo(() => {
     if (!isSubscribed || !collegedetails) return [];
     
-    return collegedetails.filter(item => {
-      const collegeName = (item.college_name || "").toLowerCase();
-      const collegeCode = (item.college_code || "").toLowerCase();
-      const location = (item.college_address || "").toLowerCase();
-      const query = searchQuery.toLowerCase().trim();
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return collegedetails;
 
-      if (!query) return true;
-      return collegeName.includes(query) || collegeCode.includes(query) || location.includes(query);
+    const normalizedQuery = q.replace(/^0+/, '');
+    const isNumeric = /^\d+$/.test(q);
+
+    // 1. Strict Code Match (Priority)
+    if (isNumeric) {
+      const strictMatches = collegedetails.filter(item => 
+        String(item.college_code || "").toLowerCase().replace(/^0+/, '') === normalizedQuery
+      );
+      if (strictMatches.length > 0) return strictMatches;
+    }
+
+    // 2. Broad Search (Fallback)
+    return collegedetails.filter(item => {
+      const itemCode = String(item.college_code || "").toLowerCase();
+      const itemName = String(item.college_name || "").toLowerCase();
+      const itemLoc  = String(item.college_address || "").toLowerCase();
+
+      return itemName.includes(q) || itemLoc.includes(q) || itemCode.includes(q);
     });
   }, [searchQuery, collegedetails, isSubscribed]);
 
