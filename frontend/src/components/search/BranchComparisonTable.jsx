@@ -26,96 +26,100 @@ export default function BranchComparisonTable({ rawRows = [], departments = [] }
 
     return (
       <div className="w-full bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-xl shadow-slate-100/50">
-        {/* Table header */}
-        <div className="grid grid-cols-[2.5fr_80px_140px_140px_140px] px-6 py-4 bg-slate-900 text-[10px] font-black text-slate-400 uppercase tracking-[0.18em]">
-          <span>Branch / Caste Category</span>
-          <span className="text-center">Code</span>
-          <span className="text-center">Cutoff Mark</span>
-          <span className="text-center">Rank</span>
-          <span className="text-center">Available Seats</span>
-        </div>
-
-        <div className="divide-y divide-slate-100">
-          {branches.map((branch, bIdx) => (
-            <div key={bIdx}>
-              {/* Branch header row */}
-              <button
-                onClick={() => setExpandedBranch(expandedBranch === bIdx ? null : bIdx)}
-                className="w-full grid grid-cols-[2.5fr_80px_140px_140px_140px] px-6 py-4 bg-slate-50 hover:bg-indigo-50 transition-colors items-center text-left group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-indigo-500 group-hover:scale-125 transition-transform"></div>
-                  <span className="text-[13px] font-black text-slate-900 uppercase tracking-tight group-hover:text-indigo-700 transition-colors">
-                    {branch.branchName}
-                  </span>
-                </div>
-                <div className="text-center">
-                  <span className="text-[11px] font-bold text-slate-500 bg-slate-200 px-2 py-1 rounded-md uppercase">
-                    {branch.code}
-                  </span>
-                </div>
-                <div className="text-center col-span-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    {branch.rows.length} categories
-                  </span>
-                </div>
-                <div className="flex justify-center">
-                  {expandedBranch === bIdx
-                    ? <ChevronUp size={16} className="text-indigo-500" />
-                    : <ChevronDown size={16} className="text-slate-400" />
-                  }
-                </div>
-              </button>
-
-              {/* Caste rows — shown when expanded */}
-              {(expandedBranch === bIdx) && branch.rows.map((row, rIdx) => {
-                const caste   = row.caste_category || '—';
-                const cutoff  = row.cutoff_mark  != null ? row.cutoff_mark  : '—';
-                const rank    = row.rank          != null ? row.rank          : '—';
-                const availableSeats = row.seats_filling || '—';
-
-                return (
-                  <div
-                    key={rIdx}
-                    className="grid grid-cols-[2.5fr_80px_140px_140px_140px] px-6 py-3.5 items-center bg-white hover:bg-slate-50 transition-colors border-t border-slate-50"
-                  >
-                    {/* Caste label */}
-                    <div className="pl-8 flex items-center gap-2">
-                      <span className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black flex items-center justify-center border border-indigo-100 uppercase shrink-0">
-                        {caste}
-                      </span>
-                      <span className="text-[12px] font-bold text-slate-600 uppercase tracking-tight">
-                        {caste} Category
-                      </span>
-                    </div>
-
-                    {/* Code (blank for caste rows) */}
-                    <div />
-
-                    {/* Cutoff */}
-                    <div className="text-center">
-                      <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-xl text-[13px] font-black shadow-sm">
-                        <Award size={11} className="opacity-70" />
-                        {cutoff}
-                      </span>
-                    </div>
-
-                    {/* Rank */}
-                    <div className="text-center">
-                      <span className="text-[13px] font-black text-slate-700">{rank}</span>
-                    </div>
-
-                    {/* Available Seats */}
-                    <div className="flex justify-center">
-                      <span className="px-3 py-1 rounded-full border bg-slate-50 text-slate-600 border-slate-200 text-[11px] font-black uppercase tracking-widest shadow-sm">
-                        {availableSeats}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+        <div className="overflow-x-auto custom-scrollbar">
+          <div className="min-w-[750px]">
+            {/* Table header */}
+            <div className="grid grid-cols-[2.5fr_80px_140px_140px_140px] px-6 py-4 bg-slate-900 text-[10px] font-black text-slate-400 uppercase tracking-[0.18em]">
+              <span>Branch / Caste Category</span>
+              <span className="text-center">Code</span>
+              <span className="text-center">Cutoff Mark</span>
+              <span className="text-center">Rank</span>
+              <span className="text-center">Available Seats</span>
             </div>
-          ))}
+
+            <div className="divide-y divide-slate-100">
+              {branches.map((branch, bIdx) => (
+                <div key={bIdx}>
+                  {/* Branch header row */}
+                  <button
+                    onClick={() => setExpandedBranch(expandedBranch === bIdx ? null : bIdx)}
+                    className="w-full grid grid-cols-[2.5fr_80px_140px_140px_140px] px-6 py-4 bg-slate-50 hover:bg-indigo-50 transition-colors items-center text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-indigo-500 group-hover:scale-125 transition-transform"></div>
+                      <span className="text-[13px] font-black text-slate-900 uppercase tracking-tight group-hover:text-indigo-700 transition-colors">
+                        {branch.branchName}
+                      </span>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-[11px] font-bold text-slate-500 bg-slate-200 px-2 py-1 rounded-md uppercase">
+                        {branch.code}
+                      </span>
+                    </div>
+                    <div className="text-center col-span-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        {branch.rows.length} categories
+                      </span>
+                    </div>
+                    <div className="flex justify-center">
+                      {expandedBranch === bIdx
+                        ? <ChevronUp size={16} className="text-indigo-500" />
+                        : <ChevronDown size={16} className="text-slate-400" />
+                      }
+                    </div>
+                  </button>
+
+                  {/* Caste rows — shown when expanded */}
+                  {(expandedBranch === bIdx) && branch.rows.map((row, rIdx) => {
+                    const caste   = row.caste_category || '—';
+                    const cutoff  = row.cutoff_mark  != null ? row.cutoff_mark  : '—';
+                    const rank    = row.rank          != null ? row.rank          : '—';
+                    const availableSeats = row.seats_filling || '—';
+
+                    return (
+                      <div
+                        key={rIdx}
+                        className="grid grid-cols-[2.5fr_80px_140px_140px_140px] px-6 py-3.5 items-center bg-white hover:bg-slate-50 transition-colors border-t border-slate-50"
+                      >
+                        {/* Caste label */}
+                        <div className="pl-8 flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black flex items-center justify-center border border-indigo-100 uppercase shrink-0">
+                            {caste}
+                          </span>
+                          <span className="text-[12px] font-bold text-slate-600 uppercase tracking-tight">
+                            {caste} Category
+                          </span>
+                        </div>
+
+                        {/* Code (blank for caste rows) */}
+                        <div />
+
+                        {/* Cutoff */}
+                        <div className="text-center">
+                          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-xl text-[13px] font-black shadow-sm">
+                            <Award size={11} className="opacity-70" />
+                            {cutoff}
+                          </span>
+                        </div>
+
+                        {/* Rank */}
+                        <div className="text-center">
+                          <span className="text-[13px] font-black text-slate-700">{rank}</span>
+                        </div>
+
+                        {/* Available Seats */}
+                        <div className="flex justify-center">
+                          <span className="px-3 py-1 rounded-full border bg-slate-50 text-slate-600 border-slate-200 text-[11px] font-black uppercase tracking-widest shadow-sm">
+                            {availableSeats}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Footer */}

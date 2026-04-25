@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input, Card } from '../components/ui';
-import { GraduationCap, User, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { GraduationCap, User, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const LoginPage = () => {
@@ -13,6 +13,10 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect back to where the user came from (e.g. /subscribe), default to /
+  const from = location.state?.from || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,13 +28,14 @@ const LoginPage = () => {
     setIsLoading(true);
     try {
       await login(identifier, password);
-      navigate('/');
+      navigate(from, { replace: true });
     } catch (err) {
       setError('Invalid email or password');
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-[90vh] flex items-center justify-center p-4 bg-slate-50">

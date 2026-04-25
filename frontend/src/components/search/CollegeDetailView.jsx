@@ -11,7 +11,7 @@ export default function CollegeDetailView({ item, onClose, onSubscribe }) {
     <div className="flex flex-col min-h-screen bg-slate-50">
       <div className="bg-white border-b border-slate-100 sticky top-0 z-50 px-6 py-4 flex items-center justify-between shadow-sm backdrop-blur-md bg-white/80">
         <button onClick={onClose} className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-black text-xs uppercase tracking-widest transition-colors group">
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back to Search
         </button>
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-end">

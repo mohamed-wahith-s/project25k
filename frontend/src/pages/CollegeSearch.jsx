@@ -276,7 +276,11 @@ const CollegeSearch = () => {
     if (detailsByCode[code]) return detailsByCode[code];
     try {
       const API_BASE = getApiBase();
-      const res = await fetch(joinApi(API_BASE, `/colleges/details/${code}`));
+      const res = await fetch(joinApi(API_BASE, `/colleges/details/${code}`), {
+        headers: {
+          'Authorization': `Bearer ${user?.token}`
+        }
+      });
       if (!res.ok) throw new Error(`Details request failed: ${res.status}`);
       const json = await res.json();
       const rows = json?.data || [];
