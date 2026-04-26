@@ -3,7 +3,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Building, ChevronLeft, ChevronRight, Filter, Search, X, Menu, Lock } from 'lucide-react';
+import { Building, ChevronLeft, ChevronRight, Filter, Search, X, Menu, Lock, Unlock } from 'lucide-react';
 import CollegeRow from '../components/CollegeRow';
 import UnlockProCard from '../components/UnlockProCard';
 import SearchHeader from '../components/search/SearchHeader';
@@ -11,6 +11,20 @@ import CollegeDetailView from '../components/search/CollegeDetailView';
 import { getApiBase, joinApi } from '../utils/apiBase';
 
 const PAGE_SIZE = 20;
+
+// ─── Free College Whitelist ────────────────────────────────────────────────
+// These colleges are shown in full to ALL users, including those without
+// a premium subscription. Keep in sync with backend FREE_COLLEGE_CODES.
+const FREE_COLLEGE_CODES = new Set([
+  '1', '2', '3', '4', '5',
+  '1516', '2005', '2369', '2603', '2615',
+  '2709', '3464', '3465', '4974', '5009',
+]);
+
+const CASTES = ['OC', 'BC', 'BCM', 'MBC', 'SC', 'SCA', 'ST'];
+
+const normaliseCode = (code) => String(code || '').replace(/^0+/, '') || String(code || '');
+const isFreeCollege = (code) => FREE_COLLEGE_CODES.has(normaliseCode(code));
 
 // ─── Helper ────────────────────────────────────────────────────────────────
 // Pivots flat rows (one row per caste per branch) into:
@@ -117,6 +131,7 @@ const CollegeSearch = () => {
   // Filtering state
   const [departments,    setDepartments]    = useState([]);
   const [selectedDept,   setSelectedDept]   = useState('All');
+  const [selectedCaste,  setSelectedCaste]  = useState(user?.caste || 'OC');
   const [isSidebarOpen,  setIsSidebarOpen]  = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
@@ -159,6 +174,7 @@ const CollegeSearch = () => {
           url.searchParams.set('pageSize', String(pageSize));
           if (q) url.searchParams.set('search', q);
           if (selectedDept !== 'All') url.searchParams.set('dept_id', selectedDept);
+          if (selectedCaste !== 'All') url.searchParams.set('caste_category', selectedCaste);
 
           const res = await fetch(url.toString(), { signal: controller.signal });
           if (!res.ok) throw new Error(`Catalog request failed: ${res.status}`);
@@ -188,25 +204,44 @@ const CollegeSearch = () => {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [searchQuery, selectedDept]);
+  }, [searchQuery, selectedDept, selectedCaste]);
 
   // Combine catalog with loaded details (dropdown fetch is per-college)
   const directoryColleges = useMemo(() => {
-    return (catalog || []).map((c) => {
+    const list = (catalog || []).map((c) => {
       const code = c.college_code;
       const detail = detailsByCode[code];
+      const isFree = isFreeCollege(code);
+      
+      // Filter departments if details are loaded
+      let departments = detail?.departments || [];
+      if (selectedDept !== 'All') {
+        departments = departments.filter(d => 
+          String(d.dept_id) === String(selectedDept) || 
+          d.code === selectedDept || 
+          d.branchName === selectedDept
+        );
+      }
+
       return {
         college_code: code,
         code,
         name: c.college_name,
         location: c.college_address || '',
-        departments: detail?.departments || [],
+        departments,
         rawRows: detail?.rawRows || [],
-        // Entrance Cutoff removed from UI
+        isFree,
         minCutoff: '—',
       };
     });
-  }, [catalog, detailsByCode]);
+
+    // Prioritize free colleges at the top
+    return [...list].sort((a, b) => {
+      if (a.isFree && !b.isFree) return -1;
+      if (!a.isFree && b.isFree) return 1;
+      return 0;
+    });
+  }, [catalog, detailsByCode, selectedDept]);
 
   // ── Search filter ─────────────────────────────────────────────────────────
   const filteredData = useMemo(() => {
@@ -255,7 +290,10 @@ const CollegeSearch = () => {
 
   // ── View More ─────────────────────────────────────────────────────────────
   const handleViewMore = async (college) => {
-    if (!isSubscribed) {
+    const code = college?.college_code || college?.code;
+    const canAccess = isSubscribed || isFreeCollege(code);
+
+    if (!canAccess) {
       setShowUnlock(true);
       return;
     }
@@ -265,6 +303,9 @@ const CollegeSearch = () => {
     
     setSelectedDetail({
       ...college,
+      isFree: isFreeCollege(code),
+      selectedCaste,
+      selectedDept,
       departments: details?.departments || college.departments || [],
       rawRows: details?.rawRows || college.rawRows || []
     });
@@ -276,10 +317,13 @@ const CollegeSearch = () => {
     if (detailsByCode[code]) return detailsByCode[code];
     try {
       const API_BASE = getApiBase();
+      const headers = {};
+      if (user?.token && user.token !== 'undefined') {
+        headers['Authorization'] = `Bearer ${user.token}`;
+      }
+
       const res = await fetch(joinApi(API_BASE, `/colleges/details/${code}`), {
-        headers: {
-          'Authorization': `Bearer ${user?.token}`
-        }
+        headers
       });
       if (!res.ok) throw new Error(`Details request failed: ${res.status}`);
       const json = await res.json();
@@ -326,6 +370,8 @@ const CollegeSearch = () => {
           >
             <CollegeDetailView
               item={selectedDetail}
+              selectedCaste={selectedCaste}
+              selectedDept={selectedDept}
               onClose={() => setSelectedDetail(null)}
               onSubscribe={() => navigate('/subscribe')}
             />
@@ -337,45 +383,9 @@ const CollegeSearch = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-             className={`flex flex-col w-full ${!isSubscribed ? 'h-screen overflow-hidden' : ''}`}
+           className={`flex flex-col w-full`}
           >
-            {/* Full Screen Lock for Free Users */}
-            {!isSubscribed && (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                {/* Backdrop Blur overlay */}
-                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[8px]" />
-                
-                {/* Lock Card */}
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="relative bg-white p-8 md:p-12 rounded-[3rem] shadow-2xl border border-slate-100 max-w-lg w-full text-center"
-                >
-                  <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center text-white mx-auto mb-8 shadow-2xl shadow-indigo-200 animate-bounce">
-                    <Lock size={40} />
-                  </div>
-                  <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">Premium Only</h2>
-                  <p className="text-slate-500 font-medium text-lg mb-10">
-                    The College Directory and advanced cutoff search are exclusive to premium members. 
-                    Upgrade your account to unlock full access.
-                  </p>
-                  <div className="flex flex-col gap-4">
-                    <button
-                      onClick={() => navigate('/subscribe')}
-                      className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3"
-                    >
-                      Unlock All Features <ChevronRight size={20} />
-                    </button>
-                    <button
-                      onClick={() => navigate('/')}
-                      className="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors"
-                    >
-                      Return to Home
-                    </button>
-                  </div>
-                </motion.div>
-              </div>
-            )}
+            {/* No full-screen lock — free colleges are visible to all users */}
             {/* Header Section */}
             <div className="bg-white border-b border-slate-200 px-4 md:px-8 py-8 md:py-12">
               <div className="max-w-[1400px] mx-auto text-center">
@@ -393,7 +403,7 @@ const CollegeSearch = () => {
               {/* ── Mobile Filter Toggle ── */}
               <button 
                 onClick={() => setIsMobileFilterOpen(true)}
-                className="lg:hidden fixed bottom-6 right-6 z-40 bg-indigo-600 text-white p-4 rounded-full shadow-xl shadow-indigo-200 flex items-center gap-2 font-black uppercase tracking-widest text-[10px]"
+                className="lg:hidden fixed bottom-6 left-6 z-[70] bg-indigo-600 text-white p-4 rounded-full shadow-xl shadow-indigo-200 flex items-center gap-2 font-black uppercase tracking-widest text-[10px]"
               >
                 <Filter size={18} />
                 Filters
@@ -430,6 +440,8 @@ const CollegeSearch = () => {
                         <FilterContent 
                           selectedDept={selectedDept} 
                           setSelectedDept={(id) => { setSelectedDept(id); setIsMobileFilterOpen(false); }} 
+                          selectedCaste={selectedCaste}
+                          setSelectedCaste={(c) => { setSelectedCaste(c); setIsMobileFilterOpen(false); }}
                           departments={departments} 
                         />
                       </div>
@@ -460,6 +472,8 @@ const CollegeSearch = () => {
                     <FilterContent 
                       selectedDept={selectedDept} 
                       setSelectedDept={setSelectedDept} 
+                      selectedCaste={selectedCaste}
+                      setSelectedCaste={setSelectedCaste}
                       departments={departments} 
                     />
                   </div>
@@ -503,29 +517,45 @@ const CollegeSearch = () => {
 
                     {/* One card per college (no duplicates) */}
                     <div className="flex flex-col gap-4 relative">
-                      {(isSubscribed ? pagedData : pagedData.slice(0, 3)).map((college) => (
-                        <CollegeRow
-                          key={college.college_code}
-                          college={college}
-                          selectedCommunity={user?.caste || 'OC'}
-                          onViewProfile={handleViewMore}
-                          onExpand={isSubscribed ? fetchCollegeDetailsIfNeeded : () => setShowUnlock(true)}
-                        />
-                      ))}
+                      {pagedData.map((college, idx) => {
+                        const canExpand = isSubscribed || college.isFree;
+                        const isLocked = !isSubscribed && !college.isFree && idx >= 3;
+                        
+                        if (isLocked) return null; // We'll show the lock overlay after the 3rd paid college
 
-                      {!isSubscribed && pagedData.length > 3 && (
-                        <div className="relative">
+                        return (
+                          <React.Fragment key={college.college_code}>
+                            {/* Section header for Free vs Paid if needed, or just the rows */}
+                            {idx === 0 && college.isFree && (
+                              <div className="flex items-center gap-2 mb-2 px-1">
+                                <Unlock size={14} className="text-emerald-500" />
+                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em]">Featured Free Colleges</span>
+                              </div>
+                            )}
+                            {idx > 0 && college.isFree && !pagedData[idx-1].isFree && (
+                               <div className="h-px bg-slate-200 my-4" />
+                            )}
+                            <CollegeRow
+                              college={college}
+                              selectedCommunity={selectedCaste}
+                              selectedDept={selectedDept}
+                              onViewProfile={handleViewMore}
+                              onExpand={canExpand ? fetchCollegeDetailsIfNeeded : () => setShowUnlock(true)}
+                            />
+                          </React.Fragment>
+                        );
+                      })}
+
+                      {!isSubscribed && filteredData.some(c => !c.isFree) && (
+                        <div className="relative mt-4">
                           {/* Blurred placeholder cards for preview */}
                           <div className="flex flex-col gap-4 opacity-40 blur-[2px] pointer-events-none select-none">
-                            {pagedData.slice(3, 5).map((college) => (
-                              <CollegeRow
-                                key={college.college_code}
-                                college={college}
-                                selectedCommunity={user?.caste || 'OC'}
+                             <CollegeRow
+                                college={filteredData.find(c => !c.isFree) || pagedData[0]}
+                                selectedCommunity="OC"
                                 onViewProfile={() => {}}
                                 onExpand={() => {}}
                               />
-                            ))}
                           </div>
                           
                           {/* Lock Overlay */}
@@ -534,7 +564,7 @@ const CollegeSearch = () => {
                               <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white mx-auto mb-6 shadow-xl shadow-indigo-100">
                                 <Lock size={32} />
                               </div>
-                              <h3 className="text-2xl font-black text-slate-900 mb-2">Search is Locked</h3>
+                              <h3 className="text-2xl font-black text-slate-900 mb-2">More Colleges Locked</h3>
                               <p className="text-slate-500 font-medium mb-8">Upgrade to Premium to unlock all {filteredData.length} colleges and see detailed cutoff ranks.</p>
                               <button
                                 onClick={() => navigate('/subscribe')}
@@ -606,14 +636,69 @@ const CollegeSearch = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Unlock Pro Modal ── */}
+      <AnimatePresence>
+        {showUnlock && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowUnlock(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg"
+            >
+              <UnlockProCard onClose={() => setShowUnlock(false)} />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 // ── Sub-component for Shared Filter UI ──────────────────────────────────────
-const FilterContent = ({ selectedDept, setSelectedDept, departments }) => (
-  <div>
-    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+const FilterContent = ({ selectedDept, setSelectedDept, selectedCaste, setSelectedCaste, departments }) => (
+  <div className="flex flex-col gap-8">
+    <div>
+      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+        Caste Category
+      </label>
+      <div className="grid grid-cols-4 gap-2">
+        <button
+          onClick={() => setSelectedCaste('All')}
+          className={`px-2 py-2 rounded-lg text-[10px] font-black border transition-all ${
+            selectedCaste === 'All'
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100'
+              : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
+          }`}
+        >
+          ALL
+        </button>
+        {CASTES.map((c) => (
+          <button
+            key={c}
+            onClick={() => setSelectedCaste(c)}
+            className={`px-2 py-2 rounded-lg text-[10px] font-black border transition-all ${
+              selectedCaste === c
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100'
+                : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
+            }`}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div>
+      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
       Department / Branch
     </label>
     <div className="flex flex-col gap-1.5 max-h-[500px] lg:max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
@@ -642,6 +727,7 @@ const FilterContent = ({ selectedDept, setSelectedDept, departments }) => (
           {selectedDept === dept.dept_id && <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 flex-shrink-0 ml-2" />}
         </button>
       ))}
+    </div>
     </div>
   </div>
 );

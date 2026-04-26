@@ -2,6 +2,24 @@ const jwt = require('jsonwebtoken');
 const { supabase } = require('../db');
 
 // ─────────────────────────────────────────────────────────────
+//  FREE_COLLEGE_CODES — these colleges are accessible to all
+//  users regardless of subscription status.
+// ─────────────────────────────────────────────────────────────
+const FREE_COLLEGE_CODES = new Set([
+  '1', '2', '3', '4', '5',
+  '1516', '2005', '2369', '2603', '2615',
+  '2709', '3464', '3465', '4974', '5009',
+]);
+
+/**
+ * Normalise a college code by stripping leading zeros so that
+ * '01', '1', '001' all resolve to '1'.
+ */
+const normaliseCode = (code) => String(code || '').replace(/^0+/, '') || String(code || '');
+
+const isFreeCollege = (code) => FREE_COLLEGE_CODES.has(normaliseCode(code));
+
+// ─────────────────────────────────────────────────────────────
 //  protect — verifies JWT, attaches req.user = { id }
 // ─────────────────────────────────────────────────────────────
 const protect = async (req, res, next) => {
@@ -28,6 +46,26 @@ const protect = async (req, res, next) => {
 };
 
 // ─────────────────────────────────────────────────────────────
+//  optionalAuth — attaches req.user if a valid JWT is present
+//  but does NOT block the request if there is no token.
+//  Use this on routes that are public but benefit from knowing
+//  who the caller is (e.g. free-college detail routes).
+// ─────────────────────────────────────────────────────────────
+const optionalAuth = async (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (auth && auth.startsWith('Bearer ')) {
+    try {
+      const token = auth.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded;
+    } catch (_) {
+      // invalid token — treat as unauthenticated
+    }
+  }
+  next();
+};
+
+// ─────────────────────────────────────────────────────────────
 //  requirePaid — must run AFTER protect
 //  Checks is_paid = true AND last_paid_date within 3 months.
 //  If subscription has expired it auto-flips is_paid → false
@@ -35,6 +73,19 @@ const protect = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────
 const requirePaid = async (req, res, next) => {
   try {
+    // ── Free-college bypass ────────────────────────────────────
+    // Resolve the college code from params or body
+    const requestedCode = req.params?.college_code || req.body?.code || req.query?.college_code;
+    if (requestedCode && isFreeCollege(requestedCode)) {
+      // This is a whitelisted free college — allow without subscription
+      return next();
+    }
+
+    // ── Standard subscription check ───────────────────────────
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authorized, no token' });
+    }
+
     const { data: user, error } = await supabase
       .from('user_applications')
       .select('is_paid, last_paid_date')
@@ -81,4 +132,4 @@ const requirePaid = async (req, res, next) => {
   }
 };
 
-module.exports = { protect, requirePaid };
+module.exports = { protect, optionalAuth, requirePaid, FREE_COLLEGE_CODES, isFreeCollege };

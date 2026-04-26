@@ -3,7 +3,7 @@ import { Award, ChevronDown, ChevronUp } from 'lucide-react';
 
 // ── Flat table: one row per (course × caste) entry ────────────────────────
 // rawRows: the unmodified API rows for a single college
-export default function BranchComparisonTable({ rawRows = [], departments = [] }) {
+export default function BranchComparisonTable({ rawRows = [], departments = [], selectedCaste = 'All', selectedDept = 'All' }) {
 
   const [expandedBranch, setExpandedBranch] = useState(0);
 
@@ -22,7 +22,17 @@ export default function BranchComparisonTable({ rawRows = [], departments = [] }
       }
       byDept[key].rows.push(row);
     });
-    const branches = Object.values(byDept);
+    const branches = Object.values(byDept)
+      .filter(b => {
+        if (selectedDept === 'All') return true;
+        // Match by ID or Name or Code
+        return String(b.dept_id) === String(selectedDept) || b.code === selectedDept || b.branchName === selectedDept;
+      })
+      .map(b => ({
+        ...b,
+        rows: b.rows.filter(r => selectedCaste === 'All' || r.caste_category === selectedCaste)
+      }))
+      .filter(b => b.rows.length > 0); // Hide branches that don't match the caste filter if applied
 
     return (
       <div className="w-full bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-xl shadow-slate-100/50">
@@ -137,13 +147,31 @@ export default function BranchComparisonTable({ rawRows = [], departments = [] }
   }
 
   // ----- Case B: fallback to pivoted departments (legacy) ------------------
-  if (departments.length === 0) return (
+  const filteredDepartments = departments
+    .filter(d => {
+        if (selectedDept === 'All') return true;
+        return String(d.dept_id) === String(selectedDept) || d.code === selectedDept || d.branchName === selectedDept;
+    })
+    .map(d => {
+        if (selectedCaste === 'All') return d;
+        // If caste is selected, only keep that caste in cutoffs
+        const newCutoffs = {};
+        if (d.cutoffs && d.cutoffs[selectedCaste]) {
+            newCutoffs[selectedCaste] = d.cutoffs[selectedCaste];
+        }
+        return { ...d, cutoffs: newCutoffs };
+    })
+    .filter(d => selectedCaste === 'All' || Object.keys(d.cutoffs || {}).length > 0);
+
+  if (filteredDepartments.length === 0) return (
     <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">
-      No cutoff data available for this college.
+      No data matching the selected filters.
     </div>
   );
 
-  const allCastes = [...new Set(departments.flatMap(d => Object.keys(d.cutoffs || {})))];
+  const allCastes = selectedCaste !== 'All' 
+    ? [selectedCaste] 
+    : [...new Set(filteredDepartments.flatMap(d => Object.keys(d.cutoffs || {})))];
 
   return (
     <div className="w-full bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-xl mt-4">
@@ -159,7 +187,7 @@ export default function BranchComparisonTable({ rawRows = [], departments = [] }
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {departments.map((dept, idx) => (
+            {filteredDepartments.map((dept, idx) => (
               <tr key={idx} className="hover:bg-slate-50 transition-colors group">
                 <td className="px-8 py-4 sticky left-0 bg-white group-hover:bg-slate-50 z-10 text-[13px] font-black text-slate-900 uppercase">
                   {dept.branchName}
@@ -188,7 +216,7 @@ export default function BranchComparisonTable({ rawRows = [], departments = [] }
         </table>
       </div>
       <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 text-right">
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{departments.length} Courses Found</span>
+        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{filteredDepartments.length} Courses Found</span>
       </div>
     </div>
   );

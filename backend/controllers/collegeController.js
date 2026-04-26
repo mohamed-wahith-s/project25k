@@ -180,7 +180,7 @@ exports.getCollegeByCode = async (req, res) => {
  */
 exports.getCollegeCatalog = async (req, res) => {
   try {
-    const { search, dept_id, page = '1', pageSize = '200' } = req.query;
+    const { search, dept_id, caste_category, page = '1', pageSize = '200' } = req.query;
     const pageNum = clampInt(page, 1, 1, 100000);
     const sizeNum = clampInt(pageSize, 200, 1, 2000);
     const from = (pageNum - 1) * sizeNum;
@@ -191,13 +191,19 @@ exports.getCollegeCatalog = async (req, res) => {
       .select('college_code,college_name,college_address', { count: 'exact' })
       .order('college_name', { ascending: true });
 
-    if (dept_id && dept_id !== 'All') {
-      // Use !inner to filter colleges that have this department in cutoff_data
+    const hasDept = dept_id && dept_id !== 'All';
+    const hasCaste = caste_category && caste_category !== 'All';
+
+    if (hasDept || hasCaste) {
+      // Use !inner to filter colleges that have matching rows in cutoff_data
       query = supabase
         .from('colleges')
-        .select('college_code,college_name,college_address, cutoff_data!inner(dept_id)', { count: 'exact' })
-        .eq('cutoff_data.dept_id', dept_id)
-        .order('college_name', { ascending: true });
+        .select('college_code,college_name,college_address, cutoff_data!inner(dept_id, caste_category)', { count: 'exact' });
+      
+      if (hasDept) query = query.eq('cutoff_data.dept_id', dept_id);
+      if (hasCaste) query = query.eq('cutoff_data.caste_category', caste_category);
+      
+      query = query.order('college_name', { ascending: true });
     }
 
     if (search) {

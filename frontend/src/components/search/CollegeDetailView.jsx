@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowLeft, Building, MapPin, GraduationCap, Users, Zap } from 'lucide-react';
 import BranchComparisonTable from './BranchComparisonTable';
 
-export default function CollegeDetailView({ item, onClose, onSubscribe }) {
+export default function CollegeDetailView({ item, selectedCaste, selectedDept, onClose, onSubscribe }) {
   // rawRows = unmodified API rows for this college (passed from CollegeSearch/TNEADashboard)
   const rawRows     = item.rawRows     || [];
   const departments = item.departments || (item.dept ? [item.dept] : []);
@@ -60,7 +60,12 @@ export default function CollegeDetailView({ item, onClose, onSubscribe }) {
               </div>
             </div>
             
-            <BranchComparisonTable rawRows={rawRows} departments={departments} />
+            <BranchComparisonTable 
+              rawRows={rawRows} 
+              departments={departments} 
+              selectedCaste={selectedCaste}
+              selectedDept={selectedDept}
+            />
           </section>
 
           <footer className="pt-20 pb-10 border-t border-slate-200 text-center">

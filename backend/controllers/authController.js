@@ -15,6 +15,8 @@ const generateToken = (id) => {
 const registerUser = async (req, res) => {
   const { name, email, phone, password, date_of_birth } = req.body;
 
+  console.log('Registration attempt:', { name, email, phone, date_of_birth });
+
   if (!name || !email || !password || !date_of_birth) {
     return res.status(400).json({ message: 'Name, email, password, and Date of Birth are required.' });
   }
@@ -50,7 +52,10 @@ const registerUser = async (req, res) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Insert error details:', error);
+      throw error;
+    }
 
     // New users are never paid at registration
     return res.status(201).json({
@@ -88,7 +93,7 @@ const loginUser = async (req, res) => {
     const { data: user, error } = await supabase
       .from('user_applications')
       .select('*')
-      .or(`email.eq."${identifier}",mobile_number.eq."${identifier}"`)
+      .or(`email.eq.${identifier},mobile_number.eq.${identifier}`)
       .single();
 
     if (error) {

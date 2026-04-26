@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect, requirePaid } = require('../middlewares/authMiddleware');
+const { protect, optionalAuth, requirePaid } = require('../middlewares/authMiddleware');
 const { 
   getCollegesList, 
   getCollegeByCode, 
@@ -13,11 +13,14 @@ const {
 router.get('/departments', getDepartments);
 router.get('/catalog', getCollegeCatalog);
 
-// ── Premium routes (JWT + is_paid required) ──────────────────
-// Full cutoff data list & college details require an active subscription
+// ── Details routes ────────────────────────────────────────────
+// optionalAuth + requirePaid: free colleges bypass subscription;
+// paid colleges still require a valid JWT + active subscription.
+router.get('/details/:college_code', optionalAuth, requirePaid, getCollegeDetails);
+router.post('/details', optionalAuth, requirePaid, getCollegeByCode);
+
+// ── Premium-only list routes (JWT + is_paid required) ─────────
 router.get('/', protect, requirePaid, getCollegesList);
 router.post('/', protect, requirePaid, getCollegesList);
-router.get('/details/:college_code', protect, requirePaid, getCollegeDetails);
-router.post('/details', protect, requirePaid, getCollegeByCode);
 
 module.exports = router;
