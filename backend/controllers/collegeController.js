@@ -79,7 +79,7 @@ exports.getCollegesList = async (req, res) => {
     // Default query: Fetch institutions and their branch counts
     let query = supabase
       .from('colleges')
-      .select('*, cutoff_data!inner(count)', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .order('college_name', { ascending: true });
 
     // Apply Department filter if provided
@@ -93,7 +93,6 @@ exports.getCollegesList = async (req, res) => {
     }
 
     const { data: colleges, error } = await query.range(from, to);
-
     if (error) throw error;
 
     return res.status(200).json({

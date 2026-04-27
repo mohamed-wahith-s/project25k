@@ -1,8 +1,6 @@
-import React from 'react';
-import { School, MapPin, BookOpen, ArrowRight, Unlock } from 'lucide-react';
+import { School, MapPin, ArrowRight, Unlock } from 'lucide-react';
 
 export default function CollegeRowHeader({ college, isOpen, onViewDetails, onHideDetails }) {
-  const deptCount = Array.isArray(college?.departments) ? college.departments.length : 0;
 
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-5 py-5 sm:px-7 sm:py-6 bg-white gap-4">
@@ -37,12 +35,6 @@ export default function CollegeRowHeader({ college, isOpen, onViewDetails, onHid
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 max-w-xs sm:max-w-sm truncate">
               <MapPin size={12} className="text-indigo-400 flex-shrink-0" />
               <span className="truncate">{college.location}</span>
-            </span>
-
-            {/* Depts */}
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-              <BookOpen size={12} className="flex-shrink-0" />
-              {deptCount} Departments
             </span>
           </div>
         </div>
