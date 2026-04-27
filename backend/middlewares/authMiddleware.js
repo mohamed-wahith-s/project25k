@@ -132,4 +132,4 @@ const requirePaid = async (req, res, next) => {
   }
 };
 
-module.exports = { protect, optionalAuth, requirePaid, FREE_COLLEGE_CODES, isFreeCollege };
+module.exports = { protect, requirePaid };

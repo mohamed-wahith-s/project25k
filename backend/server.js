@@ -11,18 +11,32 @@ const collegeRoutes = require('./routes/collegeRoutes');
 const authRoutes = require('./routes/authRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
 
 // Routes
 app.use('/api/colleges', collegeRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   res.send('PathFinder Supabase Backend is running ✅');
@@ -53,3 +67,5 @@ const startServer = async () => {
 
 startServer();
 
+
+// touch
