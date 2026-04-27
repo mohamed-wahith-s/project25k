@@ -5,7 +5,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 import {
   LogOut, User, Search, Home, Star, GraduationCap,
   Youtube, Instagram, Mail, Phone, Trophy, Pencil, Check, X,
-  ChevronDown, Settings,
+  ChevronDown, Settings, Target,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getApiBase, joinApi } from '../utils/apiBase';
@@ -39,7 +39,18 @@ const Navbar = () => {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    // Listen for open-settings event from EligibleColleges incomplete-profile screen
+    const handleOpenSettings = () => {
+      setDropdownOpen(false);
+      setSettingsOpen(true);
+    };
+    window.addEventListener('open-settings', handleOpenSettings);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('open-settings', handleOpenSettings);
+    };
   }, []);
 
   if (!user) return null;
@@ -102,8 +113,11 @@ const Navbar = () => {
 
           {/* Nav links */}
           <div className="hidden md:flex items-center space-x-8">
-            <NavLink to="/"       icon={<Home size={18} />}   label="Home"    active={isActive('/')} />
-            <NavLink to="/search" icon={<Search size={18} />} label="Colleges" active={isActive('/search')} />
+            <NavLink to="/"                 icon={<Home size={18} />}   label="Home"              active={isActive('/')} />
+            <NavLink to="/search"           icon={<Search size={18} />} label="Colleges"          active={isActive('/search')} />
+            {isSubscribed && (
+              <NavLink to="/eligible-colleges" icon={<Target size={18} />} label="Eligible Colleges" active={isActive('/eligible-colleges')} />
+            )}
             {!isSubscribed && (
               <motion.div
                 animate={{ opacity: [1, 0.4, 1], scale: [1, 1.05, 1] }}
@@ -325,7 +339,7 @@ const Navbar = () => {
             <span className={`text-[10px] font-black tracking-wide ${isActive('/search') ? 'text-indigo-600' : 'text-slate-400'}`}>Colleges</span>
           </Link>
 
-          {/* Subscribe / Pro */}
+          {/* Subscribe / Eligible Colleges / Pro */}
           {!isSubscribed ? (
             <Link
               to="/subscribe"
@@ -346,10 +360,21 @@ const Navbar = () => {
               <span className="text-[10px] font-black tracking-wide text-amber-500">Go Pro</span>
             </Link>
           ) : (
-            <div className="flex flex-col items-center gap-0.5 px-4 py-2">
-              <Star size={22} strokeWidth={2} className="text-amber-400 fill-amber-300" />
-              <span className="text-[10px] font-black tracking-wide text-amber-500">Pro ✓</span>
-            </div>
+            <Link
+              to="/eligible-colleges"
+              id="mobile-nav-eligible"
+              className={`relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl transition-all duration-200 ${
+                isActive('/eligible-colleges') ? 'text-emerald-600' : 'text-slate-400 hover:text-emerald-500'
+              }`}
+            >
+              {isActive('/eligible-colleges') && (
+                <span className="absolute inset-0 rounded-2xl bg-emerald-50 -z-10" />
+              )}
+              <Target size={22} strokeWidth={isActive('/eligible-colleges') ? 2.5 : 2} />
+              <span className={`text-[10px] font-black tracking-wide ${isActive('/eligible-colleges') ? 'text-emerald-600' : 'text-slate-400'}`}>
+                Eligible
+              </span>
+            </Link>
           )}
         </div>
       </div>

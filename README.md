@@ -198,7 +198,8 @@ npm run dev        # Starts Vite dev server (typically port 5173)
 | Route | Page | Description |
 |-------|------|-------------|
 | `/` | `Home.jsx` | Landing page |
-| `/search` | `CollegeSearch.jsx` | College/department search with filters |
+| `/search` | `CollegeSearch.jsx` | General college and department directory |
+| `/eligible-colleges` | `EligibleColleges.jsx` | Pro-exclusive personalized cutoff matching |
 | `/tnea` | `TNEADashboard.jsx` | TNEA cutoff data dashboard |
 | `/login` | `LoginPage.jsx` | Admin login |
 | `/signup` | `SignupPage.jsx` | User registration |
@@ -229,6 +230,14 @@ The frontend is fully responsive across all screen sizes:
 ---
 
 ## 🔄 Changelog
+
+### 2026-04-27 — Eligible Colleges Feature & Search Optimization
+- **`EligibleColleges.jsx`** *(new)* — Created a dedicated, Pro-exclusive page for matching students with eligible colleges based on their saved `cutoff` mark and `caste` category.
+  - Automatically fetches the user's profile data to provide a personalized matching experience.
+  - Client-side filtering ensures users only see departments where their cutoff is greater than or equal to the requirement.
+  - Handles incomplete profile states by prompting the user to update their academic details.
+- **`CollegeSearch.jsx`** — Reverted the global college search page to act as a general directory, removing manual cutoff and caste filter inputs to simplify the browsing experience. Fixed rendering bugs associated with removed state.
+- **`Navbar.jsx`** — Added desktop and mobile navigation links for "Eligible Colleges", visible only to Pro subscribers.
 
 ### 2026-04-25 — Navbar Profile Dropdown & TNEA Rank Edit
 - **`Navbar.jsx`** — Replaced static user name badge with a **clickable avatar button** (shows user initials)

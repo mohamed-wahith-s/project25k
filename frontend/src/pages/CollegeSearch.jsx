@@ -21,7 +21,6 @@ const FREE_COLLEGE_CODES = new Set([
   '2709', '3464', '3465', '4974', '5009',
 ]);
 
-const CASTES = ['OC', 'BC', 'BCM', 'MBC', 'SC', 'SCA', 'ST'];
 
 const normaliseCode = (code) => String(code || '').replace(/^0+/, '') || String(code || '');
 const isFreeCollege = (code) => FREE_COLLEGE_CODES.has(normaliseCode(code));
@@ -131,7 +130,6 @@ const CollegeSearch = () => {
   // Filtering state
   const [departments,    setDepartments]    = useState([]);
   const [selectedDept,   setSelectedDept]   = useState('All');
-  const [selectedCaste,  setSelectedCaste]  = useState(user?.caste || 'OC');
   const [isSidebarOpen,  setIsSidebarOpen]  = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
@@ -174,7 +172,6 @@ const CollegeSearch = () => {
           url.searchParams.set('pageSize', String(pageSize));
           if (q) url.searchParams.set('search', q);
           if (selectedDept !== 'All') url.searchParams.set('dept_id', selectedDept);
-          if (selectedCaste !== 'All') url.searchParams.set('caste_category', selectedCaste);
 
           const res = await fetch(url.toString(), { signal: controller.signal });
           if (!res.ok) throw new Error(`Catalog request failed: ${res.status}`);
@@ -204,7 +201,7 @@ const CollegeSearch = () => {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [searchQuery, selectedDept, selectedCaste]);
+  }, [searchQuery, selectedDept]);
 
   // Combine catalog with loaded details (dropdown fetch is per-college)
   const directoryColleges = useMemo(() => {
@@ -242,7 +239,6 @@ const CollegeSearch = () => {
       return 0;
     });
   }, [catalog, detailsByCode, selectedDept]);
-
   // ── Search filter ─────────────────────────────────────────────────────────
   const filteredData = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -276,8 +272,8 @@ const CollegeSearch = () => {
     });
   }, [searchQuery, directoryColleges]);
 
-  // Reset to page 1 on search change
-  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
+  // Reset to page 1 on filter/search change
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, selectedDept]);
 
   // ── Pagination ────────────────────────────────────────────────────────────
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
@@ -304,7 +300,6 @@ const CollegeSearch = () => {
     setSelectedDetail({
       ...college,
       isFree: isFreeCollege(code),
-      selectedCaste,
       selectedDept,
       departments: details?.departments || college.departments || [],
       rawRows: details?.rawRows || college.rawRows || []
@@ -370,7 +365,7 @@ const CollegeSearch = () => {
           >
             <CollegeDetailView
               item={selectedDetail}
-              selectedCaste={selectedCaste}
+              selectedCaste={'All'}
               selectedDept={selectedDept}
               onClose={() => setSelectedDetail(null)}
               onSubscribe={() => navigate('/subscribe')}
@@ -439,10 +434,8 @@ const CollegeSearch = () => {
                       <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8">
                         <FilterContent 
                           selectedDept={selectedDept} 
-                          setSelectedDept={(id) => { setSelectedDept(id); setIsMobileFilterOpen(false); }} 
-                          selectedCaste={selectedCaste}
-                          setSelectedCaste={(c) => { setSelectedCaste(c); setIsMobileFilterOpen(false); }}
-                          departments={departments} 
+                          setSelectedDept={(id) => { setSelectedDept(id); setIsMobileFilterOpen(false); }}
+                          departments={departments}
                         />
                       </div>
                     </motion.div>
@@ -469,12 +462,10 @@ const CollegeSearch = () => {
                   </div>
 
                   <div className="p-6 flex flex-col gap-6">
-                    <FilterContent 
+                  <FilterContent 
                       selectedDept={selectedDept} 
-                      setSelectedDept={setSelectedDept} 
-                      selectedCaste={selectedCaste}
-                      setSelectedCaste={setSelectedCaste}
-                      departments={departments} 
+                      setSelectedDept={setSelectedDept}
+                      departments={departments}
                     />
                   </div>
                 </div>
@@ -537,7 +528,7 @@ const CollegeSearch = () => {
                             )}
                             <CollegeRow
                               college={college}
-                              selectedCommunity={selectedCaste}
+                              selectedCommunity={'OC'}
                               selectedDept={selectedDept}
                               onViewProfile={handleViewMore}
                               onExpand={canExpand ? fetchCollegeDetailsIfNeeded : () => setShowUnlock(true)}
@@ -663,71 +654,40 @@ const CollegeSearch = () => {
   );
 };
 
-// ── Sub-component for Shared Filter UI ──────────────────────────────────────
-const FilterContent = ({ selectedDept, setSelectedDept, selectedCaste, setSelectedCaste, departments }) => (
-  <div className="flex flex-col gap-8">
+// ── Sub-component for Filter UI (dept only) ─────────────────────────────────
+const FilterContent = ({ selectedDept, setSelectedDept, departments }) => (
+  <div className="flex flex-col gap-6">
     <div>
       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-        Caste Category
+        Department / Branch
       </label>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="flex flex-col gap-1.5 max-h-[500px] lg:max-h-[65vh] overflow-y-auto pr-2 custom-scrollbar">
         <button
-          onClick={() => setSelectedCaste('All')}
-          className={`px-2 py-2 rounded-lg text-[10px] font-black border transition-all ${
-            selectedCaste === 'All'
-              ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100'
-              : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
-          }`}
-        >
-          ALL
-        </button>
-        {CASTES.map((c) => (
-          <button
-            key={c}
-            onClick={() => setSelectedCaste(c)}
-            className={`px-2 py-2 rounded-lg text-[10px] font-black border transition-all ${
-              selectedCaste === c
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100'
-                : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
-            }`}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-    </div>
-
-    <div>
-      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-      Department / Branch
-    </label>
-    <div className="flex flex-col gap-1.5 max-h-[500px] lg:max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-      <button
-        onClick={() => setSelectedDept('All')}
-        className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-          selectedDept === 'All'
-            ? 'bg-indigo-50 text-indigo-700 border border-indigo-100'
-            : 'text-slate-500 hover:bg-slate-50 border border-transparent'
-        }`}
-      >
-        All Branches
-        {selectedDept === 'All' && <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />}
-      </button>
-      {departments.map((dept) => (
-        <button
-          key={dept.dept_id}
-          onClick={() => setSelectedDept(dept.dept_id)}
-          className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold text-left transition-all ${
-            selectedDept === dept.dept_id
+          onClick={() => setSelectedDept('All')}
+          className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            selectedDept === 'All'
               ? 'bg-indigo-50 text-indigo-700 border border-indigo-100'
               : 'text-slate-500 hover:bg-slate-50 border border-transparent'
           }`}
         >
-          <span className="truncate">{dept.dept_name}</span>
-          {selectedDept === dept.dept_id && <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 flex-shrink-0 ml-2" />}
+          All Branches
+          {selectedDept === 'All' && <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />}
         </button>
-      ))}
-    </div>
+        {departments.map((dept) => (
+          <button
+            key={dept.dept_id}
+            onClick={() => setSelectedDept(dept.dept_id)}
+            className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold text-left transition-all ${
+              selectedDept === dept.dept_id
+                ? 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                : 'text-slate-500 hover:bg-slate-50 border border-transparent'
+            }`}
+          >
+            <span className="truncate">{dept.dept_name}</span>
+            {selectedDept === dept.dept_id && <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 flex-shrink-0 ml-2" />}
+          </button>
+        ))}
+      </div>
     </div>
   </div>
 );

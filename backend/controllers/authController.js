@@ -130,13 +130,18 @@ const loginUser = async (req, res) => {
       }
     }
 
+    let calcCutoff = user.cutoff_mark;
+    if (user.physics_mark != null && user.chemistry_mark != null && user.maths_mark != null) {
+      calcCutoff = (user.physics_mark / 2) + (user.chemistry_mark / 2) + user.maths_mark;
+    }
+
     return res.json({
       id: user.user_id,
       name: user.full_name,
       email: user.email,
       phone: user.mobile_number,
       studentName: user.full_name,
-      cutoff: user.cutoff_mark || null,
+      cutoff: calcCutoff || null,
       physics_mark: user.physics_mark ?? null,
       chemistry_mark: user.chemistry_mark ?? null,
       maths_mark: user.maths_mark ?? null,
@@ -183,6 +188,21 @@ const updateProfile = async (req, res) => {
     if (metadata.maths_mark      !== undefined) updatePayload.maths_mark      = metadata.maths_mark === '' ? null : parseFloat(metadata.maths_mark);
     if (metadata.tnea_ranking    !== undefined) updatePayload.tnea_ranking    = metadata.tnea_ranking === '' ? null : parseInt(metadata.tnea_ranking, 10);
     if (metadata.caste           !== undefined) updatePayload.caste_category  = metadata.caste;
+
+    // First fetch the current user to get existing marks if not all are provided
+    const { data: currentUser } = await supabase
+      .from('user_applications')
+      .select('physics_mark, chemistry_mark, maths_mark')
+      .eq('user_id', userId)
+      .single();
+
+    const currentPhys = updatePayload.physics_mark !== undefined ? updatePayload.physics_mark : currentUser?.physics_mark;
+    const currentChem = updatePayload.chemistry_mark !== undefined ? updatePayload.chemistry_mark : currentUser?.chemistry_mark;
+    const currentMath = updatePayload.maths_mark !== undefined ? updatePayload.maths_mark : currentUser?.maths_mark;
+
+    if (currentPhys != null && currentChem != null && currentMath != null) {
+      updatePayload.cutoff_mark = (currentPhys / 2) + (currentChem / 2) + currentMath;
+    }
 
     const { data: u, error } = await supabase
       .from('user_applications')

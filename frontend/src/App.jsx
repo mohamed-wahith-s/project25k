@@ -12,6 +12,7 @@ import SignupPage from './pages/SignupPage';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 import CollegeSearch from './pages/CollegeSearch';
+import EligibleColleges from './pages/EligibleColleges';
 // import TNEADashboard from './pages/TNEADashboard';
 
 const ProtectedRoute = ({ children }) => {
@@ -56,6 +57,12 @@ const App = () => {
                 <Route path="/search" element={
                   <ProtectedRoute>
                     <CollegeSearch />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/eligible-colleges" element={
+                  <ProtectedRoute>
+                    <EligibleColleges />
                   </ProtectedRoute>
                 } />
 

@@ -180,30 +180,38 @@ exports.getCollegeByCode = async (req, res) => {
  */
 exports.getCollegeCatalog = async (req, res) => {
   try {
-    const { search, dept_id, caste_category, page = '1', pageSize = '200' } = req.query;
+    const { search, dept_id, caste_category, cutoff_mark, page = '1', pageSize = '200' } = req.query;
     const pageNum = clampInt(page, 1, 1, 100000);
     const sizeNum = clampInt(pageSize, 200, 1, 2000);
     const from = (pageNum - 1) * sizeNum;
     const to = from + sizeNum - 1;
 
-    let query = supabase
-      .from('colleges')
-      .select('college_code,college_name,college_address', { count: 'exact' })
-      .order('college_name', { ascending: true });
+    const hasDept    = dept_id       && dept_id       !== 'All';
+    const hasCaste   = caste_category && caste_category !== 'All';
+    const hasCutoff  = cutoff_mark   && !Number.isNaN(parseFloat(cutoff_mark));
 
-    const hasDept = dept_id && dept_id !== 'All';
-    const hasCaste = caste_category && caste_category !== 'All';
+    let query;
 
-    if (hasDept || hasCaste) {
-      // Use !inner to filter colleges that have matching rows in cutoff_data
+    if (hasDept || hasCaste || hasCutoff) {
+      // Use !inner join so only colleges that have at least one qualifying
+      // cutoff_data row (matching dept + caste + cutoff ≤ user mark) are returned.
       query = supabase
         .from('colleges')
-        .select('college_code,college_name,college_address, cutoff_data!inner(dept_id, caste_category)', { count: 'exact' });
-      
-      if (hasDept) query = query.eq('cutoff_data.dept_id', dept_id);
-      if (hasCaste) query = query.eq('cutoff_data.caste_category', caste_category);
-      
+        .select(
+          'college_code,college_name,college_address, cutoff_data!inner(dept_id,caste_category,cutoff_mark)',
+          { count: 'exact' }
+        );
+
+      if (hasDept)   query = query.eq('cutoff_data.dept_id',        dept_id);
+      if (hasCaste)  query = query.eq('cutoff_data.caste_category',  caste_category);
+      if (hasCutoff) query = query.lte('cutoff_data.cutoff_mark',    parseFloat(cutoff_mark));
+
       query = query.order('college_name', { ascending: true });
+    } else {
+      query = supabase
+        .from('colleges')
+        .select('college_code,college_name,college_address', { count: 'exact' })
+        .order('college_name', { ascending: true });
     }
 
     if (search) {
@@ -212,7 +220,7 @@ exports.getCollegeCatalog = async (req, res) => {
         const conditions = [
           `college_code.ilike.%${s}%`,
           `college_name.ilike.%${s}%`,
-          `college_address.ilike.%${s}%`
+          `college_address.ilike.%${s}%`,
         ];
 
         // Handle leading zeros (e.g., search "02" should match college_code "2")
