@@ -127,27 +127,8 @@ const CollegeSearch = () => {
   const [selectedDetail, setSelectedDetail] = useState(null);
   const [showUnlock,     setShowUnlock]     = useState(false);
   
-  // Filtering state
-  const [departments,    setDepartments]    = useState([]);
-  const [selectedDept,   setSelectedDept]   = useState('All');
-  const [isSidebarOpen,  setIsSidebarOpen]  = useState(true);
-  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  // Filtering state removed
 
-  // ── Fetch Departments ──────────────────────────────────────────────────────
-  useEffect(() => {
-    const fetchDepts = async () => {
-      try {
-        const API_BASE = getApiBase();
-        const res = await fetch(joinApi(API_BASE, '/colleges/departments'));
-        if (!res.ok) throw new Error('Failed to fetch departments');
-        const json = await res.json();
-        setDepartments(json?.data || []);
-      } catch (err) {
-        console.error('Error fetching departments:', err);
-      }
-    };
-    fetchDepts();
-  }, []);
 
   // ── Fetch college catalog (debounced + paginated; supports search) ─────────
   useEffect(() => {
@@ -171,7 +152,6 @@ const CollegeSearch = () => {
           url.searchParams.set('page', String(page));
           url.searchParams.set('pageSize', String(pageSize));
           if (q) url.searchParams.set('search', q);
-          if (selectedDept !== 'All') url.searchParams.set('dept_id', selectedDept);
 
           const res = await fetch(url.toString(), { signal: controller.signal });
           if (!res.ok) throw new Error(`Catalog request failed: ${res.status}`);
@@ -201,7 +181,7 @@ const CollegeSearch = () => {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [searchQuery, selectedDept]);
+  }, [searchQuery]);
 
   // Combine catalog with loaded details (dropdown fetch is per-college)
   const directoryColleges = useMemo(() => {
@@ -212,13 +192,6 @@ const CollegeSearch = () => {
       
       // Filter departments if details are loaded
       let departments = detail?.departments || [];
-      if (selectedDept !== 'All') {
-        departments = departments.filter(d => 
-          String(d.dept_id) === String(selectedDept) || 
-          d.code === selectedDept || 
-          d.branchName === selectedDept
-        );
-      }
 
       return {
         college_code: code,
@@ -238,7 +211,7 @@ const CollegeSearch = () => {
       if (!a.isFree && b.isFree) return 1;
       return 0;
     });
-  }, [catalog, detailsByCode, selectedDept]);
+  }, [catalog, detailsByCode]);
   // ── Search filter ─────────────────────────────────────────────────────────
   const filteredData = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -273,7 +246,7 @@ const CollegeSearch = () => {
   }, [searchQuery, directoryColleges]);
 
   // Reset to page 1 on filter/search change
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, selectedDept]);
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
 
   // ── Pagination ────────────────────────────────────────────────────────────
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
@@ -300,7 +273,6 @@ const CollegeSearch = () => {
     setSelectedDetail({
       ...college,
       isFree: isFreeCollege(code),
-      selectedDept,
       departments: details?.departments || college.departments || [],
       rawRows: details?.rawRows || college.rawRows || []
     });
@@ -366,7 +338,6 @@ const CollegeSearch = () => {
             <CollegeDetailView
               item={selectedDetail}
               selectedCaste={'All'}
-              selectedDept={selectedDept}
               onClose={() => setSelectedDetail(null)}
               onSubscribe={() => navigate('/subscribe')}
             />
@@ -394,82 +365,7 @@ const CollegeSearch = () => {
               </div>
             </div>
 
-            <div className="flex max-w-[1400px] mx-auto w-full px-4 md:px-8 py-6 md:py-10 gap-8 relative">
-              {/* ── Mobile Filter Toggle ── */}
-              <button 
-                onClick={() => setIsMobileFilterOpen(true)}
-                className="lg:hidden fixed bottom-6 left-6 z-[70] bg-indigo-600 text-white p-4 rounded-full shadow-xl shadow-indigo-200 flex items-center gap-2 font-black uppercase tracking-widest text-[10px]"
-              >
-                <Filter size={18} />
-                Filters
-              </button>
-
-              {/* ── Mobile Filter Drawer ── */}
-              <AnimatePresence>
-                {isMobileFilterOpen && (
-                  <>
-                    <motion.div 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      onClick={() => setIsMobileFilterOpen(false)}
-                      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[50] lg:hidden"
-                    />
-                    <motion.div 
-                      initial={{ x: '-100%' }}
-                      animate={{ x: 0 }}
-                      exit={{ x: '-100%' }}
-                      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                      className="fixed inset-y-0 left-0 w-[85%] max-w-sm bg-white z-[51] lg:hidden flex flex-col shadow-2xl"
-                    >
-                      <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-slate-900 font-black uppercase tracking-widest text-xs">
-                          <Filter size={16} className="text-indigo-600" />
-                          Filters
-                        </div>
-                        <button onClick={() => setIsMobileFilterOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
-                          <X size={20} />
-                        </button>
-                      </div>
-                      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8">
-                        <FilterContent 
-                          selectedDept={selectedDept} 
-                          setSelectedDept={(id) => { setSelectedDept(id); setIsMobileFilterOpen(false); }}
-                          departments={departments}
-                        />
-                      </div>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-
-              {/* ── Left Sidebar (Desktop Filter) ── */}
-              <aside className="w-72 flex-shrink-0 hidden lg:block">
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden sticky top-8">
-                  <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                    <div className="flex items-center gap-2 text-slate-900 font-black uppercase tracking-widest text-[11px]">
-                      <Filter size={14} className="text-indigo-600" />
-                      Filters
-                    </div>
-                    {selectedDept !== 'All' && (
-                      <button 
-                        onClick={() => setSelectedDept('All')}
-                        className="text-indigo-600 font-bold text-[10px] uppercase hover:underline"
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="p-6 flex flex-col gap-6">
-                  <FilterContent 
-                      selectedDept={selectedDept} 
-                      setSelectedDept={setSelectedDept}
-                      departments={departments}
-                    />
-                  </div>
-                </div>
-              </aside>
+            <div className="flex max-w-[1000px] mx-auto w-full px-4 md:px-8 py-6 md:py-10 justify-center relative">
 
               {/* ── Main Content (Results) ── */}
               <div className="flex-1 flex flex-col gap-6 min-w-0">
@@ -495,11 +391,6 @@ const CollegeSearch = () => {
                         <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
                           {filteredData.length} Results
                         </p>
-                        {selectedDept !== 'All' && (
-                          <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-tight">
-                            Filtered by Branch
-                          </span>
-                        )}
                       </div>
                       <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
                         Page {currentPage} of {totalPages}
@@ -529,7 +420,6 @@ const CollegeSearch = () => {
                             <CollegeRow
                               college={college}
                               selectedCommunity={'OC'}
-                              selectedDept={selectedDept}
                               onViewProfile={handleViewMore}
                               onExpand={canExpand ? fetchCollegeDetailsIfNeeded : () => setShowUnlock(true)}
                             />
@@ -654,42 +544,6 @@ const CollegeSearch = () => {
   );
 };
 
-// ── Sub-component for Filter UI (dept only) ─────────────────────────────────
-const FilterContent = ({ selectedDept, setSelectedDept, departments }) => (
-  <div className="flex flex-col gap-6">
-    <div>
-      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-        Department / Branch
-      </label>
-      <div className="flex flex-col gap-1.5 max-h-[500px] lg:max-h-[65vh] overflow-y-auto pr-2 custom-scrollbar">
-        <button
-          onClick={() => setSelectedDept('All')}
-          className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-            selectedDept === 'All'
-              ? 'bg-indigo-50 text-indigo-700 border border-indigo-100'
-              : 'text-slate-500 hover:bg-slate-50 border border-transparent'
-          }`}
-        >
-          All Branches
-          {selectedDept === 'All' && <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />}
-        </button>
-        {departments.map((dept) => (
-          <button
-            key={dept.dept_id}
-            onClick={() => setSelectedDept(dept.dept_id)}
-            className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold text-left transition-all ${
-              selectedDept === dept.dept_id
-                ? 'bg-indigo-50 text-indigo-700 border border-indigo-100'
-                : 'text-slate-500 hover:bg-slate-50 border border-transparent'
-            }`}
-          >
-            <span className="truncate">{dept.dept_name}</span>
-            {selectedDept === dept.dept_id && <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 flex-shrink-0 ml-2" />}
-          </button>
-        ))}
-      </div>
-    </div>
-  </div>
-);
+
 
 export default CollegeSearch;

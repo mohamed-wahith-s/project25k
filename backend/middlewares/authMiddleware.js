@@ -132,4 +132,42 @@ const requirePaid = async (req, res, next) => {
   }
 };
 
-module.exports = { protect, requirePaid };
+// ─────────────────────────────────────────────────────────────
+//  protectAdmin — verifies JWT, ensures user is in admin_users
+// ─────────────────────────────────────────────────────────────
+const protectAdmin = async (req, res, next) => {
+  let token;
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    try {
+      token = req.headers.authorization.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Verify admin exists in db
+      const { data: admin, error } = await supabase
+        .from('admin_users')
+        .select('admin_id')
+        .eq('admin_id', decoded.id)
+        .single();
+
+      if (error || !admin) {
+        return res.status(401).json({ message: 'Not authorized as an admin' });
+      }
+
+      req.user = decoded; // { id, iat, exp }
+      next();
+    } catch (error) {
+      console.error(error);
+      return res.status(401).json({ message: 'Not authorized, token failed' });
+    }
+  }
+
+  if (!token) {
+    return res.status(401).json({ message: 'Not authorized, no token' });
+  }
+};
+
+module.exports = { protect, optionalAuth, requirePaid, protectAdmin };

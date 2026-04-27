@@ -200,10 +200,6 @@ const updateProfile = async (req, res) => {
     const currentChem = updatePayload.chemistry_mark !== undefined ? updatePayload.chemistry_mark : currentUser?.chemistry_mark;
     const currentMath = updatePayload.maths_mark !== undefined ? updatePayload.maths_mark : currentUser?.maths_mark;
 
-    if (currentPhys != null && currentChem != null && currentMath != null) {
-      updatePayload.cutoff_mark = (currentPhys / 2) + (currentChem / 2) + currentMath;
-    }
-
     const { data: u, error } = await supabase
       .from('user_applications')
       .update(updatePayload)
@@ -226,6 +222,11 @@ const updateProfile = async (req, res) => {
       }
     }
 
+    let calcCutoff = null;
+    if (u.physics_mark != null && u.chemistry_mark != null && u.maths_mark != null) {
+      calcCutoff = (u.physics_mark / 2) + (u.chemistry_mark / 2) + u.maths_mark;
+    }
+
     return res.json({
       id:                 u.user_id,
       name:               u.full_name,
@@ -238,7 +239,7 @@ const updateProfile = async (req, res) => {
       physics_mark:       u.physics_mark      ?? null,
       chemistry_mark:     u.chemistry_mark    ?? null,
       maths_mark:         u.maths_mark        ?? null,
-      cutoff:             u.cutoff_mark       ?? null,
+      cutoff:             calcCutoff,
       isSubscribed,
       subscriptionExpiry,
       token: generateToken(u.user_id),
