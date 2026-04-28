@@ -2,7 +2,7 @@ import React, { createContext, useContext, useMemo } from 'react';
 import axios from 'axios';
 
 // ─── Change only this line to point to a different backend ───────────────────
-const BACKEND_URL = 'http://localhost:5000/api';
+const BACKEND_URL = 'http://3.107.10.1:5000/api';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const ApiContext = createContext(null);
