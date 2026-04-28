@@ -54,29 +54,30 @@ const AdminProfilePage = () => {
         {/* Avatar row — sits BELOW the banner, pulled up via negative margin.
             The parent has pt-0 so the avatar "peeks" into the banner zone. */}
         <div className="px-5 sm:px-8">
-          {/* Avatar — pulled up by half its height so it straddles the boundary */}
-          <div className="-mt-10 mb-4 flex items-end gap-4">
+          {/* Avatar and Info Container */}
+          <div className="-mt-10 mb-6 flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-5 relative z-10">
             <div className="
-              w-20 h-20
+              w-20 h-20 sm:w-24 sm:h-24
               bg-primary text-white rounded-2xl
               flex items-center justify-center
-              text-3xl font-extrabold
+              text-3xl sm:text-4xl font-extrabold
               shadow-xl ring-4 ring-surface
               flex-shrink-0
             ">
               {initial}
             </div>
-          </div>
 
-          {/* Name + badge — clearly below the banner */}
-          <div className="mb-5">
-            <h2 className="text-xl font-extrabold text-text-primary leading-tight">
-              {admin.full_name}
-            </h2>
-            <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
-              <Shield size={11} />
-              {admin.role || 'Administrator'}
-            </span>
+            <div className="flex-1 min-w-0 pb-1 sm:pb-2">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-text-primary leading-tight truncate">
+                {admin.full_name}
+              </h2>
+              <div className="mt-2 flex items-center flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-[11px] sm:text-xs font-bold rounded-full whitespace-nowrap">
+                  <Shield size={12} className="flex-shrink-0" />
+                  {admin.role || 'System Administrator'}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Info items */}

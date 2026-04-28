@@ -10,7 +10,7 @@ const FloatingCallButton = () => {
       animate={{ scale: 1, opacity: 1 }}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
-      className="fixed bottom-8 right-8 z-[60] w-16 h-16 bg-primary-600 text-white rounded-full shadow-2xl shadow-primary-500/40 flex items-center justify-center border-4 border-white transition-colors hover:bg-primary-700 md:w-14 md:h-14"
+      className="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-[40] w-14 h-14 md:w-14 md:h-14 bg-primary-600 text-white rounded-full shadow-2xl shadow-primary-500/40 flex items-center justify-center border-4 border-white transition-colors hover:bg-primary-700"
       title="Call for Admissions"
     >
       <Phone size={28} className="md:w-6 md:h-6" />

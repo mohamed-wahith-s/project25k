@@ -337,7 +337,7 @@ export default function EligibleColleges() {
         {/* Mobile filter button */}
         <button
           onClick={() => setIsMobileFilter(true)}
-          className="lg:hidden fixed bottom-6 left-6 z-[70] bg-indigo-600 text-white p-4 rounded-full shadow-xl shadow-indigo-200 flex items-center gap-2 font-black uppercase tracking-widest text-[10px]"
+          className="lg:hidden fixed bottom-24 left-6 z-[40] bg-indigo-600 text-white p-4 rounded-full shadow-xl shadow-indigo-200 flex items-center gap-2 font-black uppercase tracking-widest text-[10px]"
         >
           <Filter size={18} /> Filter
         </button>
