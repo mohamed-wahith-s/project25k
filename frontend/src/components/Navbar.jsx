@@ -8,13 +8,14 @@ import {
   ChevronDown, Settings, Target,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getApiBase, joinApi } from '../utils/apiBase';
+import { useApiBase } from '../context/ApiContext';
 import SettingsModal from './SettingsModal';
 
 const Navbar = () => {
   const { user, logout, updateUser } = useAuth();
   const { isSubscribed } = useSubscription();
   const location = useLocation();
+  const API_BASE = useApiBase();
 
   // Dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -69,8 +70,7 @@ const Navbar = () => {
     setRankSaving(true);
     setRankError('');
     try {
-      const base = getApiBase();
-      const url = joinApi(base, 'auth/profile/tnea-rank');
+      const url = `${API_BASE}/auth/profile/tnea-rank`;
       const res = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },

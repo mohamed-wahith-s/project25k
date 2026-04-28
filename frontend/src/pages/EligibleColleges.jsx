@@ -8,7 +8,7 @@ import {
   AlertTriangle, Lock, ChevronRight, Award, Loader2,
   Target, BookOpen, Users, Settings,
 } from 'lucide-react';
-import { getApiBase, joinApi } from '../utils/apiBase';
+import { useApiBase } from '../context/ApiContext';
 
 const PAGE_SIZE = 20;
 
@@ -19,6 +19,7 @@ export default function EligibleColleges() {
   const { user } = useAuth();
   const { isSubscribed } = useSubscription();
   const navigate = useNavigate();
+  const API_BASE = useApiBase();
 
   let userCutoff = parseFloat(user?.cutoff ?? user?.cutoff_mark ?? '');
   if (!Number.isFinite(userCutoff) && user?.physics_mark != null && user?.chemistry_mark != null && user?.maths_mark != null) {
@@ -43,8 +44,7 @@ export default function EligibleColleges() {
   // ── Fetch departments list ────────────────────────────────────────────────
   useEffect(() => {
     if (!isSubscribed || profileIncomplete) return;
-    const API = getApiBase();
-    fetch(joinApi(API, '/colleges/departments'))
+    fetch(`${API_BASE}/colleges/departments`)
       .then(r => r.json())
       .then(j => setDepartments(j?.data || []))
       .catch(console.error);
@@ -57,8 +57,7 @@ export default function EligibleColleges() {
     setLoading(true);
     (async () => {
       try {
-        const API = getApiBase();
-        const url = new URL(joinApi(API, '/colleges/catalog'));
+        const url = new URL(`${API_BASE}/colleges/catalog`);
         url.searchParams.set('pageSize', '2000');
         url.searchParams.set('caste_category', userCaste);
         url.searchParams.set('cutoff_mark', String(userCutoff));
@@ -93,8 +92,7 @@ export default function EligibleColleges() {
     setDetailRows([]);
     setDetailLoading(true);
     try {
-      const API  = getApiBase();
-      const res  = await fetch(joinApi(API, `/colleges/details/${college.college_code}`), {
+      const res  = await fetch(`${API_BASE}/colleges/details/${college.college_code}`, {
         headers: user?.token ? { Authorization: `Bearer ${user.token}` } : {},
       });
       const json = await res.json();

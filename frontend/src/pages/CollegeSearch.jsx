@@ -8,7 +8,7 @@ import CollegeRow from '../components/CollegeRow';
 import UnlockProCard from '../components/UnlockProCard';
 import SearchHeader from '../components/search/SearchHeader';
 import CollegeDetailView from '../components/search/CollegeDetailView';
-import { getApiBase, joinApi } from '../utils/apiBase';
+import { useApiBase } from '../context/ApiContext';
 
 const PAGE_SIZE = 20;
 
@@ -118,6 +118,7 @@ const CollegeSearch = () => {
   const { isSubscribed } = useSubscription();
   const { user }         = useAuth();
   const navigate         = useNavigate();
+  const API_BASE         = useApiBase();
 
   const [catalog,        setCatalog]        = useState([]);
   const [detailsByCode,  setDetailsByCode]  = useState({});
@@ -138,7 +139,6 @@ const CollegeSearch = () => {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const API_BASE = getApiBase();
         const pageSize = 2000; // backend clamps to max 2000
         let page = 1;
         let all = [];
@@ -148,7 +148,7 @@ const CollegeSearch = () => {
         // when the colleges table has > 2000 rows.
         // eslint-disable-next-line no-constant-condition
         while (true) {
-          const url = new URL(joinApi(API_BASE, '/colleges/catalog'));
+          const url = new URL(`${API_BASE}/colleges/catalog`);
           url.searchParams.set('page', String(page));
           url.searchParams.set('pageSize', String(pageSize));
           if (q) url.searchParams.set('search', q);
@@ -283,13 +283,12 @@ const CollegeSearch = () => {
     if (!code) return null;
     if (detailsByCode[code]) return detailsByCode[code];
     try {
-      const API_BASE = getApiBase();
       const headers = {};
       if (user?.token && user.token !== 'undefined') {
         headers['Authorization'] = `Bearer ${user.token}`;
       }
 
-      const res = await fetch(joinApi(API_BASE, `/colleges/details/${code}`), {
+      const res = await fetch(`${API_BASE}/colleges/details/${code}`, {
         headers
       });
       if (!res.ok) throw new Error(`Details request failed: ${res.status}`);

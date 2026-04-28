@@ -5,6 +5,7 @@ import TNEAResultRow from '../components/TNEAResultRow';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useAuth } from '../context/AuthContext';
 import { useColleges } from '../context/CollegeContext';
+import { useApiBase } from '../context/ApiContext';
 import UnlockProCard from '../components/UnlockProCard';
 import CollegeDetailView from '../components/search/CollegeDetailView';
 
@@ -13,6 +14,7 @@ const TNEADashboard = () => {
   const { user } = useAuth();
   const { collegedetails, loadingColleges } = useColleges();
   const navigate = useNavigate();
+  const API_URL = useApiBase();
   
   const [detailLoading, setDetailLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,8 +50,6 @@ const TNEADashboard = () => {
   const handleViewMore = async (item) => {
     try {
       setDetailLoading(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      
       const response = await fetch(`${API_URL}/colleges/details/${item.college_code}`);
       const json = await response.json();
 

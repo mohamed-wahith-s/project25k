@@ -1,5 +1,5 @@
 export function getApiBase() {
-  const raw = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const raw = 'http://3.107.10.1:5000/api';
   // Support both absolute (http://...) and relative (/api) bases.
   if (raw.startsWith('http://') || raw.startsWith('https://')) return raw.replace(/\/$/, '');
   const base = new URL(window.location.origin);

@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ApiContext, API_BASE_URL } from './context/ApiContext';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionProvider';
@@ -31,6 +32,7 @@ const ProtectedRoute = ({ children }) => {
 
 const App = () => {
   return (
+    <ApiContext.Provider value={API_BASE_URL}>
     <AuthProvider>
       <SubscriptionProvider>
         <CollegeProvider>
@@ -82,6 +84,7 @@ const App = () => {
         </CollegeProvider>
       </SubscriptionProvider>
     </AuthProvider>
+    </ApiContext.Provider>
   );
 };
 

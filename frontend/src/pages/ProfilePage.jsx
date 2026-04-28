@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useApiBase } from '../context/ApiContext';
 import { Button, Card, Input, Badge } from '../components/ui';
 import { User, Mail, Phone, Calculator, Shield, Award, Users, Calendar, MapPin, Sparkles, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -9,6 +10,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 
 const ProfilePage = () => {
   const { user } = useAuth();
+  const API_URL = useApiBase();
   const { subscribe } = useSubscription();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -29,7 +31,6 @@ const ProfilePage = () => {
       const { loadRazorpayScript } = await import('../utils/razorpayUtils');
       if (!await loadRazorpayScript()) return alert('Razorpay failed to load.');
       
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const studentCutoff = (parseFloat(formData.physics || 0) + parseFloat(formData.chemistry || 0)) / 2 + parseFloat(formData.maths || 0);
       const metadata = { ...formData, cutoff: studentCutoff };
 

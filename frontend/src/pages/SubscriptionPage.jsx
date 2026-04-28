@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useApiBase } from '../context/ApiContext';
 import { Check, Sparkles, Lock, LogIn, GraduationCap, Star, ShieldCheck, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { loadRazorpayScript } from '../utils/razorpayUtils';
@@ -12,6 +13,7 @@ const SubscriptionPage = () => {
   const { user, updateUser } = useAuth();
   const { isSubscribed } = useSubscription();
   const navigate = useNavigate();
+  const API_URL = useApiBase();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -158,8 +160,6 @@ const SubscriptionPage = () => {
         setError('Failed to load payment gateway. Please try again.');
         return;
       }
-
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
       // 1. Create order
       const orderRes = await fetch(`${API_URL}/payment/create-order`, {

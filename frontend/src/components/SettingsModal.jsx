@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import { getApiBase, joinApi } from '../utils/apiBase';
+import { useApiBase } from '../context/ApiContext';
 
 const CASTE_OPTIONS = ['OC', 'BC', 'BCM', 'MBC', 'SC', 'SCA', 'ST'];
 
@@ -19,6 +19,7 @@ const CASTE_OPTIONS = ['OC', 'BC', 'BCM', 'MBC', 'SC', 'SCA', 'ST'];
 const SettingsModal = ({ isOpen, onClose }) => {
   const { user, updateUser } = useAuth();
   const { isSubscribed } = useSubscription();
+  const API_BASE = useApiBase();
 
   const emptyForm = {
     studentName: '', email: '', phone: '', dob: '',
@@ -66,8 +67,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
     setSuccess(false);
 
     try {
-      const base = getApiBase();
-      const url  = joinApi(base, 'auth/profile');
+      const url  = `${API_BASE}/auth/profile`;
 
       // Always send basic info
       const metadata = {
