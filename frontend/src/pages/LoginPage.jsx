@@ -30,11 +30,24 @@ const LoginPage = () => {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError('Invalid email or password');
+      const msg = err.message || '';
+      // Map Supabase error messages to user-friendly text
+      if (msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('email_not_confirmed')) {
+        setError('Please confirm your email address first. Check your inbox for a confirmation link.');
+      } else if (msg.toLowerCase().includes('invalid login credentials') || msg.toLowerCase().includes('invalid_credentials')) {
+        setError('Incorrect email or password. Please try again.');
+      } else if (msg.toLowerCase().includes('too many requests') || msg.toLowerCase().includes('rate limit')) {
+        setError('Too many login attempts. Please wait a few minutes and try again.');
+      } else if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('fetch')) {
+        setError('Network error. Please check your internet connection and try again.');
+      } else {
+        setError(msg || 'Login failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
 
 
   return (

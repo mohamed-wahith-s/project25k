@@ -8,66 +8,107 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch the extended profile from our backend
+  /**
+   * Fetch the extended profile from our Express backend.
+   * Returns null if the backend is unreachable or the profile row doesn't exist yet.
+   * Uses a 5-second timeout so a slow backend doesn't block the UI forever.
+   */
   const fetchProfile = async (token) => {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       const response = await fetch(`${API_URL}/auth/profile`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
       });
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile');
-      }
+      clearTimeout(timeoutId);
+
+      if (!response.ok) return null;
       const data = await response.json();
-      return { ...data, token }; // Include token in the user object
+      return { ...data, token };
     } catch (err) {
-      console.error('Error fetching profile:', err);
+      console.warn('fetchProfile failed (backend may be unreachable):', err.message);
       return null;
     }
   };
 
+  /**
+   * Build a minimal user object from the Supabase session when the
+   * backend profile is unavailable (e.g. first signup, backend down).
+   */
+  const buildFallbackUser = (session) => {
+    const meta = session.user?.user_metadata || {};
+    return {
+      token: session.access_token,
+      email: session.user.email,
+      studentName: meta.full_name || meta.name || '',
+      phone: meta.phone || '',
+      date_of_birth: meta.date_of_birth || '',
+      isSubscribed: false,
+    };
+  };
+
   useEffect(() => {
-    // Check active sessions and sets the user
     const initializeAuth = async () => {
       setLoading(true);
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (session) {
-        const profile = await fetchProfile(session.access_token);
-        if (profile) {
-          setUser(profile);
-          localStorage.setItem('user', JSON.stringify(profile));
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session) {
+          const profile = await fetchProfile(session.access_token);
+          if (profile) {
+            setUser(profile);
+            localStorage.setItem('user', JSON.stringify(profile));
+          } else {
+            // Backend unreachable or profile row not created yet — use Supabase metadata
+            const fallback = buildFallbackUser(session);
+            setUser(fallback);
+            localStorage.setItem('user', JSON.stringify(fallback));
+          }
         } else {
           setUser(null);
           localStorage.removeItem('user');
         }
-      } else {
-        // Fallback to local storage if session is null but we had a user 
-        // (Supabase session might have expired)
+      } catch (err) {
+        console.error('Auth initialization error:', err);
         setUser(null);
-        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initializeAuth();
 
-    // Listen for changes on auth state (log in, log out, etc.)
+    // Listen for auth state changes (login, logout, token refresh, etc.)
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session) {
-             const profile = await fetchProfile(session.access_token);
-             if (profile) {
-               setUser(profile);
-               localStorage.setItem('user', JSON.stringify(profile));
-             }
+            // After signup the DB trigger needs a moment to create the profile row.
+            // Try immediately, then retry once after 1.5 s if still null.
+            let profile = await fetchProfile(session.access_token);
+            if (!profile && event === 'SIGNED_IN') {
+              await new Promise((r) => setTimeout(r, 1500));
+              profile = await fetchProfile(session.access_token);
+            }
+
+            if (profile) {
+              setUser(profile);
+              localStorage.setItem('user', JSON.stringify(profile));
+            } else {
+              // Still unavailable — fall back to Supabase metadata so the
+              // user is logged in and can use the app
+              const fallback = buildFallbackUser(session);
+              setUser(fallback);
+              localStorage.setItem('user', JSON.stringify(fallback));
+            }
           }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           localStorage.removeItem('user');
-        } else if (event === 'PASSWORD_RECOVERY') {
-           // Handled in ResetPassword page
         }
+        // PASSWORD_RECOVERY is handled in the ResetPassword page
       }
     );
 
@@ -77,21 +118,13 @@ export const AuthProvider = ({ children }) => {
   }, [API_URL]);
 
   const login = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (error) {
-      throw new Error(error.message);
-    }
-    
-    // The onAuthStateChange listener will handle fetching the profile
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
+    // onAuthStateChange fires SIGNED_IN → sets user
     return data;
   };
 
   const signup = async (userData) => {
-    // 1. Sign up with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
@@ -100,16 +133,11 @@ export const AuthProvider = ({ children }) => {
           full_name: userData.name,
           phone: userData.phone,
           date_of_birth: userData.date_of_birth,
-        }
-      }
+        },
+      },
     });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-    
-    // The onAuthStateChange listener will handle the rest, BUT 
-    // we might need to wait a tiny bit for the DB trigger to create the profile row
+    if (error) throw new Error(error.message);
+    // onAuthStateChange fires SIGNED_IN → sets user
     return data;
   };
 
@@ -119,7 +147,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
   };
 
-  const updateUser = (data) => setUser(prev => {
+  const updateUser = (data) => setUser((prev) => {
     const updated = { ...prev, ...data };
     localStorage.setItem('user', JSON.stringify(updated));
     return updated;

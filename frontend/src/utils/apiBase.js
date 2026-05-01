@@ -1,5 +1,5 @@
 export function getApiBase() {
-  const raw = 'http://3.107.10.1:5000/api';
+  const raw = 'https://api.collegediaries.in/api';
   // Support both absolute (http://...) and relative (/api) bases.
   if (raw.startsWith('http://') || raw.startsWith('https://')) return raw.replace(/\/$/, '');
   const base = new URL(window.location.origin);
