@@ -46,7 +46,43 @@ export default function EligibleColleges() {
     if (!isSubscribed || profileIncomplete) return;
     fetch(`${API_BASE}/colleges/departments`)
       .then(r => r.json())
-      .then(j => setDepartments(j?.data || []))
+      .then(j => {
+        const allDepts = j?.data || [];
+        
+        const ALLOWED_DEPARTMENTS = [
+          { label: 'CSE - Computer Science and Engineering', keys: ['COMPUTER SCIENCE AND ENGINEERING', 'COMPUTER SCIENCE AND ENGINEERING (SS)', 'M.TECH. COMPUTER SCIENCE'] },
+          { label: 'IT - Information Technology', keys: ['INFORMATION TECHNOLOGY', 'INFORMATION TECHNOLOGY (SS)'] },
+          { label: 'AIDS - Artificial Intelligence and Data Science', keys: ['ARTIFICIAL INTELLIGENCE AND DATA SCIENCE', 'ARTIFICIAL INTELLIGENCE AND DATA SCIENCE (SS)', 'ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING', 'COMPUTER SCIENCE AND ENGINEERING (AI AND MACHINE LEARNING)'] },
+          { label: 'Cyber Security - Cyber Security', keys: ['CYBER SECURITY', 'COMPUTER SCIENCE AND ENGINEERING (CYBER SECURITY)'] },
+          { label: 'Machine Learning - Machine Learning', keys: ['ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING', 'COMPUTER SCIENCE AND ENGINEERING (ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING)'] },
+          { label: 'ECE - Electronics and Communication Engineering', keys: ['ELECTRONICS AND COMMUNICATION ENGINEERING', 'ELECTRONICS AND COMMUNICATION ENGINEERING (SS)'] },
+          { label: 'CSBS - Computer Science and Business Systems', keys: ['COMPUTER SCIENCE AND BUSINESS SYSTEM'] },
+          { label: 'EEE - Electrical and Electronics Engineering', keys: ['ELECTRICAL AND ELECTRONICS ENGINEERING', 'ELECTRICAL AND ELECTRONICS ENGINEERING (SS)'] },
+          { label: 'E&I - Electronics and Instrumentation Engineering', keys: ['ELECTRONICS AND INSTRUMENTATION ENGINEERING', 'INSTRUMENTATION AND CONTROL ENGINEERING'] },
+          { label: 'ECE VLSI - Electronics and Communication Engineering (Very Large Scale Integration)', keys: ['ELECTRONICS ENGINEERING (VLSI DESIGN AND TECHNOLOGY)', 'ELECTRONICS ENGINEERING (VLSI DESIGN AND TECHNOLOGY) (SS)'] },
+          { label: 'Bio Medical - Biomedical Engineering', keys: ['BIOMEDICAL ENGINEERING', 'BIOMEDICAL ENGINEERING (SS)', 'MEDICAL ELECTRONICS ENGINEERING'] },
+          { label: 'Bio Technology - Biotechnology Engineering', keys: ['BIOTECHNOLOGY', 'BIOTECHNOLOGY (SS)', 'INDUSTRIAL BIOTECHNOLOGY'] },
+          { label: 'Civil - Civil Engineering', keys: ['CIVIL ENGINEERING', 'CIVIL ENGINEERING (SS)', 'CIVIL AND STRUCTURAL ENGINEERING', 'CIVIL ENGINEERING (ENVIRONMENTAL ENGINEERING)'] },
+          { label: 'Mech - Mechanical Engineering', keys: ['MECHANICAL ENGINEERING', 'MECHANICAL ENGINEERING (MANUFACTURING)', 'MANUFACTURING ENGINEERING', 'MECHANICAL AND AUTOMATION ENGINEERING'] },
+          { label: 'Automobile - Automobile Engineering', keys: ['AUTOMOBILE ENGINEERING', 'MECHANICAL ENGINEERING (AUTOMOBILE)'] },
+          { label: 'Agriculture - Agricultural Engineering', keys: ['AGRICULTURAL ENGINEERING'] },
+          { label: 'Food Technology - Food Technology Engineering', keys: ['FOOD TECHNOLOGY', 'FOOD TECHNOLOGY (SS)'] },
+          { label: 'Robotics - Robotics Engineering', keys: ['ROBOTICS AND AUTOMATION', 'MECHATRONICS ENGINEERING'] }
+        ];
+
+        const groupedDepts = [];
+        ALLOWED_DEPARTMENTS.forEach(allowed => {
+          const matches = allDepts.filter(d => allowed.keys.includes(d.dept_name));
+          if (matches.length > 0) {
+            groupedDepts.push({
+              dept_id: matches.map(m => m.dept_id).join(','), // comma separated for backend 'in' query
+              dept_name: allowed.label
+            });
+          }
+        });
+
+        setDepartments(groupedDepts);
+      })
       .catch(console.error);
   }, [isSubscribed, profileIncomplete]);
 
@@ -96,9 +132,16 @@ export default function EligibleColleges() {
         headers: user?.token ? { Authorization: `Bearer ${user.token}` } : {},
       });
       const json = await res.json();
-      const rows = (json?.data || []).filter(
+      let rows = (json?.data || []).filter(
         r => r.caste_category === userCaste && parseFloat(r.cutoff_mark) <= userCutoff
       );
+      
+      // If a specific department filter is applied, only show matching departments in the detail view
+      if (selectedDept !== 'All') {
+        const selectedIds = selectedDept.split(',');
+        rows = rows.filter(r => selectedIds.includes(String(r.dept_id)));
+      }
+
       // Sort: highest cutoff first (best/most competitive departments first)
       rows.sort((a, b) => parseFloat(b.cutoff_mark) - parseFloat(a.cutoff_mark));
       setDetailRows(rows);

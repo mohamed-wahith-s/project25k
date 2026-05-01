@@ -5,29 +5,65 @@ const { supabase } = require('../db');
 //  If the row does NOT exist yet (first login after signup),
 //  we auto-create a minimal stub so the app never breaks.
 // ─────────────────────────────────────────────────────────────
-const getOrCreateProfile = async (email, fullName = null) => {
-  // 1. Try to find the existing profile row
-  const { data: existing } = await supabase
-    .from('user_applications')
-    .select('*')
-    .eq('email', email)
-    .maybeSingle(); // use maybeSingle so we get null instead of error when missing
+const getOrCreateProfile = async (user) => {
+  try {
+    const email = user.email;
+    const metadata = user.user_metadata || {};
+    const fullName = metadata.full_name || email.split('@')[0];
+    const phone = metadata.phone || '0000000000';
+    const dob = metadata.date_of_birth || '2000-01-01';
 
-  if (existing) return existing;
+    // 1. Try to find the existing profile row
+    const { data: existing, error: fetchError } = await supabase
+      .from('user_applications')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle(); // use maybeSingle so we get null instead of error when missing
 
-  // 2. Row missing (new Supabase user) — create a stub row
-  const { data: created, error } = await supabase
-    .from('user_applications')
-    .insert({ email, full_name: fullName || email.split('@')[0] })
-    .select()
-    .single();
+    if (fetchError) {
+      console.error('Error fetching profile:', fetchError.message);
+      throw { status: 400, message: fetchError.message };
+    }
 
-  if (error) {
-    console.error('auto-create profile error:', error.message);
-    return null;
+    if (existing) return existing;
+
+    // 2. Row missing (new Supabase user) — create a stub row
+    console.log(`Creating new profile for ${email}`);
+    const insertPayload = {
+      email,
+      full_name: fullName,
+      mobile_number: phone,
+      date_of_birth: dob,
+      password: 'NO_PASSWORD_SUPABASE_AUTH' // legacy constraint
+    };
+
+    const { data: created, error: insertError } = await supabase
+      .from('user_applications')
+      .insert(insertPayload)
+      .select()
+      .maybeSingle();
+
+    if (insertError) {
+      // Bonus: Check for duplicate constraint violation
+      if (insertError.code === '23505') {
+        console.warn(`Duplicate user detected during creation for ${email}. Re-fetching.`);
+        const { data: retryExisting } = await supabase
+          .from('user_applications')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
+        if (retryExisting) return retryExisting;
+      }
+      console.error('auto-create profile error:', insertError.message);
+      throw { status: 400, message: insertError.message };
+    }
+
+    return created;
+  } catch (err) {
+    if (err.status) throw err;
+    console.error('Unexpected error in getOrCreateProfile:', err);
+    throw { status: 500, message: 'Internal Server Error during profile creation.' };
   }
-
-  return created;
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -91,21 +127,24 @@ const shapeUser = (u, extraSubscription = {}) => {
 // ─────────────────────────────────────────────────────────────
 const getProfile = async (req, res) => {
   try {
-    const email    = req.user.email;  // extracted from Supabase JWT by middleware
-    const fullName = req.user.user_metadata?.full_name || null;
-
-    const profile = await getOrCreateProfile(email, fullName);
-
-    if (!profile) {
-      return res.status(500).json({ message: 'Could not load or create profile.' });
+    const user = req.user;
+    if (!user || !user.email) {
+      return res.status(400).json({ message: 'No email found in user token.' });
     }
 
-    const subscription = await computeSubscription(profile, email);
+    const profile = await getOrCreateProfile(user);
+
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found and could not be created.' });
+    }
+
+    const subscription = await computeSubscription(profile, user.email);
 
     return res.json(shapeUser(profile, subscription));
   } catch (err) {
-    console.error('getProfile error:', err.message);
-    return res.status(500).json({ message: err.message });
+    console.error('getProfile error:', err.message || err);
+    const status = err.status || 500;
+    return res.status(status).json({ message: err.message || 'Internal server error' });
   }
 };
 

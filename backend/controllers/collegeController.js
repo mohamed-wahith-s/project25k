@@ -65,7 +65,11 @@ exports.getCollegesList = async (req, res) => {
     }
 
     if (dept_id && dept_id !== 'All') {
-      query = query.eq('cutoff_data.dept_id', dept_id);
+      if (String(dept_id).includes(',')) {
+        query = query.in('cutoff_data.dept_id', String(dept_id).split(','));
+      } else {
+        query = query.eq('cutoff_data.dept_id', dept_id);
+      }
     }
 
     if (college_code) {
@@ -192,7 +196,13 @@ exports.getCollegeCatalog = async (req, res) => {
           { count: 'exact' }
         );
 
-      if (hasDept)   query = query.eq('cutoff_data.dept_id',        dept_id);
+      if (hasDept) {
+        if (String(dept_id).includes(',')) {
+          query = query.in('cutoff_data.dept_id', String(dept_id).split(','));
+        } else {
+          query = query.eq('cutoff_data.dept_id', dept_id);
+        }
+      }
       if (hasCaste)  query = query.eq('cutoff_data.caste_category',  caste_category);
       if (hasCutoff) query = query.lte('cutoff_data.cutoff_mark',    parseFloat(cutoff_mark));
 
