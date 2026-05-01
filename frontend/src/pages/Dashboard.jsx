@@ -6,7 +6,7 @@ import {
   Search, ArrowRight, GraduationCap, Shield, Trophy,
   Star, Sparkles, BookOpen, BarChart3, MessageCircle,
   CheckCircle2, Clock, Zap, TrendingUp, Users, Crown,
-  ChevronRight, CalendarDays, Info, Target
+  ChevronRight, CalendarDays, Info, Target, User
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -84,6 +84,157 @@ const Dashboard = () => {
     cutoffSubtext = 'From your profile';
   }
 
+  // ── Guest / public landing view ────────────────────────────────────────
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
+        {/* Hero */}
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900" />
+          <div
+            className="absolute inset-0 opacity-40"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle at 15% 60%, rgba(99,102,241,0.35) 0%, transparent 45%), radial-gradient(circle at 85% 15%, rgba(59,130,246,0.25) 0%, transparent 45%), radial-gradient(circle at 50% 90%, rgba(139,92,246,0.15) 0%, transparent 50%)',
+            }}
+          />
+          <div
+            className="absolute inset-0 opacity-[0.04]"
+            style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '28px 28px' }}
+          />
+
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-24 sm:pb-36 text-center">
+            <motion.div {...fadeIn(0)} className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-emerald-400 text-[11px] font-black uppercase tracking-[0.2em]">TNEA Counseling 2025</span>
+            </motion.div>
+
+            <motion.h1
+              {...fadeUp(0.05)}
+              className="text-4xl sm:text-5xl md:text-6xl font-black text-white leading-[1.1] tracking-tight mb-5"
+            >
+              Navigate TNEA with<br />
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-violet-400">
+                Confidence &amp; Clarity
+              </span>
+            </motion.h1>
+
+            <motion.p
+              {...fadeUp(0.1)}
+              className="text-slate-400 text-base sm:text-lg font-medium max-w-2xl mx-auto leading-relaxed mb-10"
+            >
+              Personalized college admission strategy, cutoff analytics for 500+ colleges, and expert counseling — all in one place.
+            </motion.p>
+
+            <motion.div {...fadeUp(0.18)} className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                to="/login"
+                className="group flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black text-base shadow-2xl shadow-indigo-900/60 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all"
+              >
+                <User size={18} />
+                Login to Get Started
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                to="/signup"
+                className="flex items-center gap-2 px-7 py-4 rounded-2xl bg-white/10 border border-white/20 text-white font-bold text-sm hover:bg-white/20 transition-all backdrop-blur-sm"
+              >
+                Create Free Account
+              </Link>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Mini stats band */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-10 relative z-10 mb-16">
+          <motion.div
+            {...fadeUp(0.22)}
+            className="grid grid-cols-2 md:grid-cols-4 gap-3"
+          >
+            {[
+              { number: '10K+', label: 'Students Guided', icon: <Users size={18} /> },
+              { number: '500+', label: 'Partner Colleges', icon: <GraduationCap size={18} /> },
+              { number: '98%',  label: 'Success Rate',     icon: <TrendingUp size={18} /> },
+              { number: '20+',  label: 'Expert Counselors', icon: <MessageCircle size={18} /> },
+            ].map((s) => (
+              <div key={s.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col items-center text-center">
+                <div className="text-indigo-400 mb-1">{s.icon}</div>
+                <p className="text-2xl font-black text-slate-900">{s.number}</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Feature highlights */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-24 space-y-16">
+          <motion.section {...fadeUp(0.28)}>
+            <SectionHeader
+              eyebrow="What We Offer"
+              title="Platform Features"
+              subtitle="Everything you need to navigate TNEA counseling"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              {FEATURES.map((f, i) => (
+                <motion.div
+                  key={f.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="group bg-white rounded-3xl border border-slate-100 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-500 relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-slate-50 to-transparent rounded-full -translate-y-20 translate-x-20 group-hover:scale-150 transition-transform duration-700" />
+                  <div className="relative">
+                    <div className={`w-11 h-11 rounded-2xl bg-${f.color}-50 text-${f.color}-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-all`}>
+                      {f.icon}
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-sm font-black text-slate-900">{f.title}</h3>
+                      {f.free
+                        ? <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Free</span>
+                        : <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Pro</span>
+                      }
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed font-medium">{f.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.section>
+
+          {/* Bottom CTA */}
+          <motion.section {...fadeUp(0.32)}>
+            <div className="relative rounded-3xl overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700" />
+              <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+              <div className="relative p-8 sm:p-14 text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 text-white text-[10px] font-black uppercase tracking-widest mb-5">
+                  <Sparkles size={12} /> Join 10,000+ Students
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-black text-white mb-3 leading-tight">
+                  Ready to Secure<br />Your Dream Seat?
+                </h2>
+                <p className="text-indigo-200 text-sm font-medium max-w-lg mx-auto mb-8">
+                  Sign in and get your personalized college admission plan in minutes.
+                </p>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-white text-indigo-700 font-black text-sm shadow-2xl shadow-indigo-900/50 hover:bg-indigo-50 hover:-translate-y-0.5 transition-all"
+                >
+                  <User size={16} />
+                  Login Now
+                  <ArrowRight size={15} />
+                </Link>
+              </div>
+            </div>
+          </motion.section>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Authenticated dashboard ─────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
 

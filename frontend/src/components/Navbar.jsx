@@ -54,7 +54,61 @@ const Navbar = () => {
     };
   }, []);
 
-  if (!user) return null;
+  if (!user) return (
+    <>
+      <nav className="sticky top-0 z-[55] w-full bg-white/80 backdrop-blur-lg border-b border-slate-100 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2.5 group">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600 flex items-center justify-center text-white shadow-indigo-200 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+              <GraduationCap size={26} className="drop-shadow-md" />
+            </div>
+            <div className="flex flex-col -space-y-1.5">
+              <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">College Diaries</span>
+              <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-indigo-900 to-blue-900 tracking-tight">
+                Path<span className="text-indigo-600">Finder</span>
+              </span>
+            </div>
+          </Link>
+
+          {/* Social links (desktop) */}
+          <div className="hidden sm:flex items-center space-x-2 border-r border-slate-200 pr-4 mr-2">
+            <motion.a
+              href="https://www.youtube.com/@collegediaries9022"
+              target="_blank" rel="noopener noreferrer"
+              whileHover={{ scale: 1.2, rotate: 5 }} whileTap={{ scale: 0.9 }}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center"
+              title="YouTube Channel"
+            >
+              <Youtube size={20} strokeWidth={2.5} />
+            </motion.a>
+            <motion.a
+              href="https://instagram.com/collegediaries1100?igsh=Z3J6dWhpZmdzZDl4"
+              target="_blank" rel="noopener noreferrer"
+              whileHover={{ scale: 1.2, rotate: -5 }} whileTap={{ scale: 0.9 }}
+              className="p-2 text-pink-600 hover:bg-pink-50 rounded-lg transition-colors flex items-center justify-center"
+              title="Instagram Profile"
+            >
+              <Instagram size={20} strokeWidth={2.5} />
+            </motion.a>
+          </div>
+
+          {/* Guest Login button */}
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+            <Link
+              id="guest-login-btn"
+              to="/login"
+              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black text-sm shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all"
+            >
+              <User size={16} />
+              <span>Login</span>
+            </Link>
+          </motion.div>
+        </div>
+      </nav>
+      {/* No mobile bottom nav for guests */}
+    </>
+  );
 
   const isActive = (path) => location.pathname === path;
 

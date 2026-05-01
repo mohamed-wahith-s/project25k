@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ApiContext, API_BASE_URL } from './context/ApiContext';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './context/AuthContext';
@@ -18,14 +18,16 @@ import EligibleColleges from './pages/EligibleColleges';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   
   if (loading) return (
-    <div className="h-screen w-full flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    <div style={{ height: '100vh', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
     </div>
   );
   
-  if (!user) return <Navigate to="/login" replace />;
+  // Unauthenticated: redirect to home, passing the intended path so Navbar can send them to login
+  if (!user) return <Navigate to="/" state={{ from: location.pathname }} replace />;
   
   return children;
 };
@@ -44,11 +46,8 @@ const App = () => {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
                 
-                <Route path="/" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
+                {/* Public home route — works for guests and logged-in users */}
+                <Route path="/" element={<Dashboard />} />
                 
                 <Route path="/subscribe" element={
                   <ProtectedRoute>
