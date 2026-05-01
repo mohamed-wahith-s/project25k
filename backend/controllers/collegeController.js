@@ -7,6 +7,28 @@ const clampInt = (value, fallback, min, max) => {
 };
 
 /**
+ * Normalizes a college code into a list of variants to handle padding issues.
+ * @param {string} code 
+ * @returns {string[]}
+ */
+const getNormalizedCodeVariants = (code) => {
+  if (!code) return [];
+  const s = String(code).trim();
+  const variants = new Set([s]);
+  
+  // Handle leading zeros
+  const withoutZeros = s.replace(/^0+/, '');
+  if (withoutZeros) variants.add(withoutZeros);
+  
+  // Add common padding (usually 1-4 digits)
+  if (withoutZeros.length === 1) variants.add(`0${withoutZeros}`);
+  if (withoutZeros.length === 2) variants.add(`00${withoutZeros}`); // Some use 00xx
+  if (withoutZeros.length === 3) variants.add(`0${withoutZeros}`);
+
+  return Array.from(variants);
+};
+
+/**
  * @desc    Get all unique institutions from the colleges table
  * @route   GET /api/colleges
  * @access  Public
@@ -22,83 +44,56 @@ exports.getCollegesList = async (req, res) => {
       search,
       page = '1',
       pageSize = '1000',
-      sortBy = 'cutoff_mark',
-      sortOrder = 'desc',
-    } = req.query;
+    } = { ...req.query, ...req.body }; // Support both GET and POST
 
     const pageNum = clampInt(page, 1, 1, 100000);
     const sizeNum = clampInt(pageSize, 1000, 1, 5000);
     const from = (pageNum - 1) * sizeNum;
     const to = from + sizeNum - 1;
 
-    // 0) First get total count safely (head request).
-    let countQuery = supabase.from('cutoff_data').select('id', { count: 'exact', head: true });
+    // Use !inner join to filter colleges based on cutoff criteria
+    let query = supabase
+      .from('colleges')
+      .select('*, cutoff_data!inner(dept_id, caste_category, cutoff_mark, subject_code)', { count: 'exact' });
 
     if (cutoff_mark) {
-      const cm = parseFloat(cutoff_mark);
-      countQuery = countQuery.lte('cutoff_mark', cm);
+      query = query.lte('cutoff_data.cutoff_mark', parseFloat(cutoff_mark));
     }
 
     if (caste_category && caste_category !== 'All') {
-      countQuery = countQuery.eq('caste_category', caste_category);
+      query = query.eq('cutoff_data.caste_category', caste_category);
     }
 
     if (dept_id && dept_id !== 'All') {
-      countQuery = countQuery.eq('dept_id', dept_id);
+      query = query.eq('cutoff_data.dept_id', dept_id);
     }
 
     if (college_code) {
-      countQuery = countQuery.eq('college_code', college_code);
+      const variants = getNormalizedCodeVariants(college_code);
+      query = query.in('college_code', variants);
     }
+
     if (subject_code) {
-      countQuery = countQuery.eq('subject_code', subject_code);
+      query = query.eq('cutoff_data.subject_code', subject_code);
     }
 
     if (search) {
       const s = String(search).trim();
       if (s.length > 0) {
-        countQuery = countQuery.or([`subject_code.ilike.%${s}%`, `seats_filling.ilike.%${s}%`].join(','));
+        query = query.or(`college_name.ilike.%${s}%,college_code.ilike.%${s}%,college_address.ilike.%${s}%`);
       }
     }
 
-    const { count: totalCount, error: countError } = await countQuery;
-    if (countError) throw countError;
-    const total = totalCount ?? 0;
+    const { data: colleges, error, count } = await query
+      .order('college_name', { ascending: true })
+      .range(from, to);
 
-    if (total === 0 || from >= total) {
-      return res.status(200).json({
-        success: true,
-        count: 0,
-        total,
-        page: pageNum,
-        pageSize: sizeNum,
-        data: [],
-      });
-    }
-
-    // Default query: Fetch institutions and their branch counts
-    let query = supabase
-      .from('colleges')
-      .select('*', { count: 'exact' })
-      .order('college_name', { ascending: true });
-
-    // Apply Department filter if provided
-    if (dept_id && dept_id !== 'All') {
-      query = query.eq('cutoff_data.dept_id', dept_id);
-    }
-
-    // if search is provided, we search in institution details
-    if (search) {
-      query = query.or(`college_name.ilike.%${search}%,college_code.ilike.%${search}%`);
-    }
-
-    const { data: colleges, error } = await query.range(from, to);
     if (error) throw error;
 
     return res.status(200).json({
       success: true,
       count: colleges.length,
-      total,
+      total: count ?? colleges.length,
       page: pageNum,
       pageSize: sizeNum,
       data: colleges
@@ -126,11 +121,7 @@ exports.getCollegeByCode = async (req, res) => {
       return res.status(400).json({ success: false, message: 'College code is required.' });
     }
 
-    // Normalized codes to handle padding differences (e.g. "1" matches "01")
-    const codeVariants = [code];
-    if (code.length === 1) codeVariants.push(`0${code}`);
-    if (code.length === 2 && !code.startsWith('0')) codeVariants.unshift(`0${code}`); 
-    if (code.length === 2 && code.startsWith('0')) codeVariants.push(code.substring(1));
+    const variants = getNormalizedCodeVariants(code);
 
     // Fetch detailed cutoff data joined with departments for this specific college
     let query = supabase
@@ -143,7 +134,7 @@ exports.getCollegeByCode = async (req, res) => {
           subject_code
         )
       `)
-      .in('college_code', codeVariants);
+      .in('college_code', variants);
 
     // Optional Filtering
     if (cutoff_mark) {
@@ -217,16 +208,18 @@ exports.getCollegeCatalog = async (req, res) => {
       const s = String(search).trim();
       if (s.length > 0) {
         const conditions = [
-          `college_code.ilike.%${s}%`,
           `college_name.ilike.%${s}%`,
           `college_address.ilike.%${s}%`,
         ];
 
-        // Handle leading zeros (e.g., search "02" should match college_code "2")
-        const normalizedSearch = s.replace(/^0+/, '');
-        if (normalizedSearch && normalizedSearch !== s) {
-          conditions.push(`college_code.eq.${normalizedSearch}`);
-        }
+        // Add all code variants to the search
+        const variants = getNormalizedCodeVariants(s);
+        variants.forEach(v => {
+          conditions.push(`college_code.eq.${v}`);
+        });
+
+        // Also keep ilike for partial code matches
+        conditions.push(`college_code.ilike.%${s}%`);
 
         query = query.or(conditions.join(','));
       }
@@ -265,6 +258,8 @@ exports.getCollegeDetails = async (req, res) => {
       return res.status(400).json({ success: false, message: 'college_code is required' });
     }
 
+    const variants = getNormalizedCodeVariants(college_code);
+
     const { data, error } = await supabase
       .from('cutoff_data')
       .select(
@@ -282,7 +277,7 @@ exports.getCollegeDetails = async (req, res) => {
         )
       `
       )
-      .eq('college_code', college_code)
+      .in('college_code', variants)
       .order('dept_id', { ascending: true, nullsFirst: false })
       .order('caste_category', { ascending: true, nullsFirst: false })
       .order('id', { ascending: true });

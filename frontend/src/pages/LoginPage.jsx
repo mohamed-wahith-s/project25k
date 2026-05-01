@@ -6,7 +6,7 @@ import { GraduationCap, User, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const LoginPage = () => {
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -20,14 +20,14 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!identifier || !password) {
+    if (!email || !password) {
       setError('Please fill in all fields');
       return;
     }
     setError('');
     setIsLoading(true);
     try {
-      await login(identifier, password);
+      await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
       setError('Invalid email or password');
@@ -64,10 +64,10 @@ const LoginPage = () => {
                   <User size={18} />
                 </div>
                 <Input
-                  type="text"
-                  placeholder="Email or Phone number"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="pl-11"
                   autoFocus
                 />
@@ -115,9 +115,9 @@ const LoginPage = () => {
             </Button>
 
             <div className="text-center mt-4">
-              <a href="#" className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
+              <Link to="/forgot-password" title="Click here to reset your password" id="forgot-password-link" className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
                 Forgot your password?
-              </a>
+              </Link>
             </div>
           </form>
         </Card>

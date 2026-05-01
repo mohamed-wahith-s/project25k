@@ -74,7 +74,7 @@ const verifyPayment = async (req, res) => {
         last_paid_date: now,
         updated_at: now,
       })
-      .eq('user_id', req.user.id)
+      .eq('email', req.user.email)
       .select('user_id, full_name, email, mobile_number, tnea_ranking, is_paid, last_paid_date')
       .single();
 

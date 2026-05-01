@@ -14,6 +14,8 @@ import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 import CollegeSearch from './pages/CollegeSearch';
 import EligibleColleges from './pages/EligibleColleges';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 // import TNEADashboard from './pages/TNEADashboard';
 
 const ProtectedRoute = ({ children }) => {
@@ -48,6 +50,8 @@ const App = () => {
                 
                 {/* Public home route — works for guests and logged-in users */}
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 
                 <Route path="/subscribe" element={
                   <ProtectedRoute>

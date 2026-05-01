@@ -1,96 +1,123 @@
 import React, { useState, useEffect } from 'react';
 import { AuthContext } from './AuthContext';
 import { useApiBase } from './ApiContext';
-
-/**
- * Decode a JWT payload without verifying the signature.
- * Returns null if the token is malformed or expired.
- */
-const decodeJWT = (token) => {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    // Check expiry
-    if (payload.exp && Date.now() / 1000 > payload.exp) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-};
+import { supabase } from '../utils/supabase';
 
 export const AuthProvider = ({ children }) => {
   const API_URL = useApiBase();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const savedUserStr = localStorage.getItem('user');
-
-    if (savedUserStr) {
-      try {
-        const savedUser = JSON.parse(savedUserStr);
-
-        // If there's a JWT token, validate it hasn't expired
-        if (savedUser.token) {
-          const payload = decodeJWT(savedUser.token);
-          if (payload) {
-            // Token is valid — restore session
-            setUser(savedUser);
-          } else {
-            // Token expired — clear storage and stay as guest
-            localStorage.removeItem('user');
-            setUser(null);
-          }
-        } else {
-          // No token field — treat as guest (legacy / broken session)
-          localStorage.removeItem('user');
-          setUser(null);
-        }
-      } catch {
-        localStorage.removeItem('user');
-        setUser(null);
-      }
-    } else {
-      // Nothing in storage → guest mode
-      setUser(null);
-    }
-    setLoading(false);
-  }, []);
-
-  const login = async (identifier, password) => {
+  // Fetch the extended profile from our backend
+  const fetchProfile = async (token) => {
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password }),
+      const response = await fetch(`${API_URL}/auth/profile`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile');
+      }
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Login failed');
-      setUser(data);
-      localStorage.setItem('user', JSON.stringify(data));
-      return data;
-    } catch (error) {
-      throw error;
+      return { ...data, token }; // Include token in the user object
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      return null;
     }
+  };
+
+  useEffect(() => {
+    // Check active sessions and sets the user
+    const initializeAuth = async () => {
+      setLoading(true);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (session) {
+        const profile = await fetchProfile(session.access_token);
+        if (profile) {
+          setUser(profile);
+          localStorage.setItem('user', JSON.stringify(profile));
+        } else {
+          setUser(null);
+          localStorage.removeItem('user');
+        }
+      } else {
+        // Fallback to local storage if session is null but we had a user 
+        // (Supabase session might have expired)
+        setUser(null);
+        localStorage.removeItem('user');
+      }
+      setLoading(false);
+    };
+
+    initializeAuth();
+
+    // Listen for changes on auth state (log in, log out, etc.)
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (session) {
+             const profile = await fetchProfile(session.access_token);
+             if (profile) {
+               setUser(profile);
+               localStorage.setItem('user', JSON.stringify(profile));
+             }
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          localStorage.removeItem('user');
+        } else if (event === 'PASSWORD_RECOVERY') {
+           // Handled in ResetPassword page
+        }
+      }
+    );
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, [API_URL]);
+
+  const login = async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) {
+      throw new Error(error.message);
+    }
+    
+    // The onAuthStateChange listener will handle fetching the profile
+    return data;
   };
 
   const signup = async (userData) => {
-    try {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Signup failed');
-      setUser(data);
-      localStorage.setItem('user', JSON.stringify(data));
-      return data;
-    } catch (error) {
-      throw error;
+    // 1. Sign up with Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          full_name: userData.name,
+          phone: userData.phone,
+          date_of_birth: userData.date_of_birth,
+        }
+      }
+    });
+
+    if (error) {
+      throw new Error(error.message);
     }
+    
+    // The onAuthStateChange listener will handle the rest, BUT 
+    // we might need to wait a tiny bit for the DB trigger to create the profile row
+    return data;
   };
 
-  const logout = () => { setUser(null); localStorage.removeItem('user'); };
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    localStorage.removeItem('user');
+  };
 
   const updateUser = (data) => setUser(prev => {
     const updated = { ...prev, ...data };

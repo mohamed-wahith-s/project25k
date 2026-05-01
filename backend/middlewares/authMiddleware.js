@@ -1,4 +1,3 @@
-const jwt = require('jsonwebtoken');
 const { supabase } = require('../db');
 
 // ─────────────────────────────────────────────────────────────
@@ -20,7 +19,7 @@ const normaliseCode = (code) => String(code || '').replace(/^0+/, '') || String(
 const isFreeCollege = (code) => FREE_COLLEGE_CODES.has(normaliseCode(code));
 
 // ─────────────────────────────────────────────────────────────
-//  protect — verifies JWT, attaches req.user = { id }
+//  protect — verifies Supabase JWT, attaches req.user = { id }
 // ─────────────────────────────────────────────────────────────
 const protect = async (req, res, next) => {
   let token;
@@ -31,11 +30,18 @@ const protect = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded; // { id, iat, exp }
+      
+      // Use Supabase to verify the JWT
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+
+      if (error || !user) {
+        return res.status(401).json({ message: 'Not authorized, token failed' });
+      }
+
+      req.user = user; // { id (uuid), aud, role, email, ... }
       next();
     } catch (error) {
-      console.error(error);
+      console.error('Protect middleware error:', error);
       return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   }
@@ -46,7 +52,7 @@ const protect = async (req, res, next) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-//  optionalAuth — attaches req.user if a valid JWT is present
+//  optionalAuth — attaches req.user if a valid Supabase JWT is present
 //  but does NOT block the request if there is no token.
 //  Use this on routes that are public but benefit from knowing
 //  who the caller is (e.g. free-college detail routes).
@@ -56,8 +62,10 @@ const optionalAuth = async (req, res, next) => {
   if (auth && auth.startsWith('Bearer ')) {
     try {
       const token = auth.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded;
+      const { data: { user } } = await supabase.auth.getUser(token);
+      if (user) {
+         req.user = user;
+      }
     } catch (_) {
       // invalid token — treat as unauthenticated
     }
@@ -89,7 +97,7 @@ const requirePaid = async (req, res, next) => {
     const { data: user, error } = await supabase
       .from('user_applications')
       .select('is_paid, last_paid_date')
-      .eq('user_id', req.user.id)
+      .eq('email', req.user.email)
       .single();
 
     if (error || !user) {
@@ -115,7 +123,7 @@ const requirePaid = async (req, res, next) => {
         await supabase
           .from('user_applications')
           .update({ is_paid: false, updated_at: new Date().toISOString() })
-          .eq('user_id', req.user.id);
+          .eq('email', req.user.email);
 
         return res.status(403).json({
           message: 'Your 3-month subscription has expired. Please renew.',
@@ -144,6 +152,8 @@ const protectAdmin = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
+      // Note: We are keeping the old custom JWT for admins
+      const jwt = require('jsonwebtoken'); // Require it here just for admins
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
       // Verify admin exists in db
