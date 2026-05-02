@@ -104,10 +104,6 @@ const Dashboard = () => {
           />
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-24 sm:pb-36 text-center">
-            <motion.div {...fadeIn(0)} className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-emerald-400 text-[11px] font-black uppercase tracking-[0.2em]">TNEA Counseling 2025</span>
-            </motion.div>
 
             <motion.h1
               {...fadeUp(0.05)}
@@ -153,7 +149,7 @@ const Dashboard = () => {
           >
             {[
               { number: '10K+', label: 'Students Guided', icon: <Users size={18} /> },
-              { number: '500+', label: 'Partner Colleges', icon: <GraduationCap size={18} /> },
+              { number: '400+', label: 'College Details', icon: <GraduationCap size={18} /> },
               { number: '98%',  label: 'Success Rate',     icon: <TrendingUp size={18} /> },
               { number: '20+',  label: 'Expert Counselors', icon: <MessageCircle size={18} /> },
             ].map((s) => (
@@ -260,12 +256,6 @@ const Dashboard = () => {
 
             {/* Left: Greeting */}
             <motion.div {...fadeUp(0)}>
-              <div className="flex items-center gap-2 mb-4 sm:mb-5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-emerald-400 text-[10px] sm:text-[11px] font-black uppercase tracking-[0.25em]">
-                  TNEA Counseling 2025
-                </span>
-              </div>
               <h1 className="text-3xl sm:text-4xl md:text-[3.25rem] font-black text-white leading-[1.15] md:leading-[1.08] tracking-tight mb-3 sm:mb-4">
                 Welcome back,<br />
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-violet-400">
@@ -478,7 +468,7 @@ const Dashboard = () => {
               style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
             {[
               { number: '10K+', label: 'Students Guided',   icon: <Users size={18} /> },
-              { number: '500+', label: 'Partner Colleges',  icon: <GraduationCap size={18} /> },
+              { number: '400+', label: 'College Details',  icon: <GraduationCap size={18} /> },
               { number: '98%',  label: 'Success Rate',      icon: <TrendingUp size={18} /> },
               { number: '20+',  label: 'Expert Counselors', icon: <MessageCircle size={18} /> },
             ].map((s, i) => (

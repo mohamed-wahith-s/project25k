@@ -6,9 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Building, Filter, MapPin, GraduationCap,
   AlertTriangle, Lock, ChevronRight, Award, Loader2,
-  Target, BookOpen, Users, Settings,
+  Target, BookOpen, Users, Settings, Search,
 } from 'lucide-react';
 import { useApiBase } from '../context/ApiContext';
+import ProfessionalCollegeTable from '../components/ui/ProfessionalCollegeTable';
 
 const PAGE_SIZE = 20;
 
@@ -33,8 +34,9 @@ export default function EligibleColleges() {
   // ── State ─────────────────────────────────────────────────────────────────
   const [departments,   setDepartments]   = useState([]);
   const [selectedDept,  setSelectedDept]  = useState('All');
-  const [catalog,       setCatalog]       = useState([]);
-  const [loading,       setLoading]       = useState(false);
+  const [catalog, setCatalog] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
   const [currentPage,   setCurrentPage]   = useState(1);
   const [selectedCollege, setSelectedCollege] = useState(null); // detail view
   const [detailRows,    setDetailRows]    = useState([]);
@@ -117,10 +119,40 @@ export default function EligibleColleges() {
     })();
     return () => ctrl.abort();
   }, [isSubscribed, profileIncomplete, selectedDept, userCaste, userCutoff]);
+  
+  // Reset to page 1 on search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+  
+  // ── Filtered Catalog ──────────────────────────────────────────────────────
+  const filteredCatalog = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return catalog;
+
+    const normalizedQuery = q.replace(/^0+/, '');
+    const isNumeric = /^\d+$/.test(q);
+
+    // Filter by name or code
+    return catalog.filter(item => {
+      const itemCode = String(item.college_code || "").toLowerCase();
+      const itemName = String(item.college_name || "").toLowerCase();
+      const itemLoc  = String(item.college_address || "").toLowerCase();
+      
+      const normalizedItemCode = itemCode.replace(/^0+/, '');
+
+      return (
+        itemName.includes(q) || 
+        itemLoc.includes(q) || 
+        itemCode.includes(q) || 
+        (isNumeric && normalizedItemCode === normalizedQuery)
+      );
+    });
+  }, [catalog, searchQuery]);
 
   // ── Pagination ────────────────────────────────────────────────────────────
-  const totalPages = Math.max(1, Math.ceil(catalog.length / PAGE_SIZE));
-  const pagedData  = catalog.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredCatalog.length / PAGE_SIZE));
+  const pagedData  = filteredCatalog.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   // ── Fetch college detail rows ─────────────────────────────────────────────
   const handleViewCollege = async (college) => {
@@ -132,19 +164,26 @@ export default function EligibleColleges() {
         headers: user?.token ? { Authorization: `Bearer ${user.token}` } : {},
       });
       const json = await res.json();
-      let rows = (json?.data || []).filter(
+      const allRows = json?.data || [];
+      
+      let eligibleRows = allRows.filter(
         r => r.caste_category === userCaste && parseFloat(r.cutoff_mark) <= userCutoff
       );
       
       // If a specific department filter is applied, only show matching departments in the detail view
       if (selectedDept !== 'All') {
         const selectedIds = selectedDept.split(',');
-        rows = rows.filter(r => selectedIds.includes(String(r.dept_id)));
+        eligibleRows = eligibleRows.filter(r => selectedIds.includes(String(r.dept_id)));
       }
 
-      // Sort: highest cutoff first (best/most competitive departments first)
-      rows.sort((a, b) => parseFloat(b.cutoff_mark) - parseFloat(a.cutoff_mark));
-      setDetailRows(rows);
+      // Find the unique dept_ids that are eligible
+      const eligibleDeptIds = new Set(eligibleRows.map(r => r.dept_id));
+      
+      // Keep ALL rows for those eligible departments so the table can show all castes
+      const displayRows = allRows.filter(r => eligibleDeptIds.has(r.dept_id));
+
+      setSelectedCollege({ ...college, _allRowsCount: allRows.length });
+      setDetailRows(displayRows);
     } catch (e) {
       console.error(e);
     } finally {
@@ -256,13 +295,6 @@ export default function EligibleColleges() {
 
             {/* Department table */}
             <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-100/50 overflow-hidden">
-              <div className="bg-slate-900 px-6 py-4 flex items-center gap-3">
-                <BookOpen size={16} className="text-indigo-400" />
-                <h3 className="text-[11px] font-black text-slate-300 uppercase tracking-widest">
-                  Eligible Departments — {userCaste} Category
-                </h3>
-              </div>
-
               {detailLoading ? (
                 <div className="flex items-center justify-center py-20 gap-3 text-slate-400">
                   <Loader2 size={24} className="animate-spin text-indigo-500" />
@@ -277,56 +309,16 @@ export default function EligibleColleges() {
                   <p className="text-slate-300 text-xs mt-1">
                     No {userCaste} rows with cutoff ≤ {userCutoff} for this college.
                   </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <div className="min-w-[640px]">
-                    {/* Header row */}
-                    <div className="grid grid-cols-[2fr_80px_130px_120px_120px] px-6 py-3 bg-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      <span>Department</span>
-                      <span className="text-center">Code</span>
-                      <span className="text-center">Cutoff Mark</span>
-                      <span className="text-center">Rank</span>
-                      <span className="text-center">Seats</span>
-                    </div>
-                    <div className="divide-y divide-slate-100">
-                      {detailRows.map((row, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.03 }}
-                          className="grid grid-cols-[2fr_80px_130px_120px_120px] px-6 py-4 items-center hover:bg-emerald-50/40 transition-colors"
-                        >
-                          <span className="text-[13px] font-black text-slate-900 uppercase tracking-tight">
-                            {row.departments?.dept_name || '—'}
-                          </span>
-                          <div className="text-center">
-                            <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md uppercase">
-                              {row.departments?.subject_code || row.subject_code || '—'}
-                            </span>
-                          </div>
-                          <div className="text-center">
-                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-xl text-[13px] font-black shadow-sm">
-                              <Award size={11} className="opacity-70" />
-                              {row.cutoff_mark ?? '—'}
-                            </span>
-                          </div>
-                          <div className="text-center">
-                            <span className="text-[13px] font-black text-slate-700">
-                              {row.rank ?? '—'}
-                            </span>
-                          </div>
-                          <div className="text-center">
-                            <span className="px-3 py-1 rounded-full border bg-slate-50 text-slate-600 border-slate-200 text-[11px] font-black uppercase tracking-widest">
-                              {row.seats_filling ?? '—'}
-                            </span>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
+                  <div className="mt-4 p-4 bg-slate-100 rounded-xl text-[10px] font-mono text-slate-500 max-w-xs mx-auto text-left">
+                    <p>Debug Info:</p>
+                    <p>• total_rows: {selectedCollege?._allRowsCount || 0}</p>
+                    <p>• caste: {userCaste}</p>
+                    <p>• cutoff: {userCutoff}</p>
+                    <p>• dept_filter: {selectedDept}</p>
                   </div>
                 </div>
+              ) : (
+                <ProfessionalCollegeTable college={selectedCollege} rawRows={detailRows} userCaste={userCaste} />
               )}
 
               <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between">
@@ -335,11 +327,11 @@ export default function EligibleColleges() {
                   Live TNEA Data
                 </span>
                 <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                  {detailRows.length} eligible dept{detailRows.length !== 1 ? 's' : ''}
+                  {new Set(detailRows.map(r => r.dept_id)).size} eligible dept(s)
                 </span>
               </div>
             </div>
-          </div>
+            </div>
         </motion.div>
       </AnimatePresence>
     );
@@ -370,6 +362,22 @@ export default function EligibleColleges() {
               <Award size={14} className="opacity-70" />
               <span className="text-[11px] font-black uppercase tracking-widest">Cutoff ≤ {userCutoff}</span>
             </div>
+          </div>
+
+          {/* Search Bar centered in header */}
+          <div className="max-w-3xl mx-auto mt-8">
+             <div className="flex items-center gap-4 bg-white p-2 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-100 pr-6">
+               <div className="relative flex-1">
+                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                 <input
+                   type="text"
+                   placeholder="Course, city, college or code . . ."
+                   className="w-full py-4 pl-16 pr-6 text-sm text-slate-600 outline-none font-bold placeholder:text-slate-300 bg-transparent"
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                 />
+               </div>
+             </div>
           </div>
         </div>
       </div>
@@ -440,20 +448,24 @@ export default function EligibleColleges() {
               <Loader2 size={36} className="text-indigo-500 animate-spin" />
               <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Finding Your Colleges…</p>
             </div>
-          ) : catalog.length === 0 ? (
+          ) : filteredCatalog.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 gap-4 bg-white rounded-3xl border border-slate-200 shadow-sm">
               <Building size={48} className="text-slate-200" />
-              <h3 className="text-lg font-black text-slate-900">No eligible colleges found</h3>
-              <p className="text-slate-400 font-medium text-sm">Try selecting a different department or check your profile cutoff.</p>
+              <h3 className="text-lg font-black text-slate-900">{catalog.length === 0 ? 'No eligible colleges found' : 'No search results found'}</h3>
+              <p className="text-slate-400 font-medium text-sm">
+                {catalog.length === 0 
+                  ? 'Try selecting a different department or check your profile cutoff.' 
+                  : 'Try a different college name or code.'}
+              </p>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-3">
-                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{catalog.length} Eligible Colleges</p>
-                  {selectedDept !== 'All' && (
+                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{filteredCatalog.length} Results</p>
+                  {(selectedDept !== 'All' || searchQuery) && (
                     <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-tight">
-                      Filtered by Branch
+                      {searchQuery ? 'Search Applied' : 'Filtered by Branch'}
                     </span>
                   )}
                 </div>

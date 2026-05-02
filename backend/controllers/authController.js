@@ -73,20 +73,27 @@ const computeSubscription = async (user, email) => {
   let isSubscribed = false;
   let subscriptionExpiry = null;
 
-  if (user.is_paid && user.last_paid_date) {
-    const paidDate  = new Date(user.last_paid_date);
-    const expiryDate = new Date(paidDate);
-    expiryDate.setMonth(expiryDate.getMonth() + 3);
+  if (user.is_paid) {
+    if (user.last_paid_date) {
+      const paidDate  = new Date(user.last_paid_date);
+      const expiryDate = new Date(paidDate);
+      expiryDate.setMonth(expiryDate.getMonth() + 3);
+      // Give 1 extra day of grace period to avoid timezone/midnight confusion
+      expiryDate.setDate(expiryDate.getDate() + 1);
 
-    if (new Date() <= expiryDate) {
-      isSubscribed    = true;
-      subscriptionExpiry = expiryDate.toISOString();
+      if (new Date() <= expiryDate) {
+        isSubscribed    = true;
+        subscriptionExpiry = expiryDate.toISOString();
+      } else {
+        // Auto-expire subscription in DB
+        await supabase
+          .from('user_applications')
+          .update({ is_paid: false, updated_at: new Date().toISOString() })
+          .eq('email', email);
+      }
     } else {
-      // Auto-expire subscription in DB
-      await supabase
-        .from('user_applications')
-        .update({ is_paid: false, updated_at: new Date().toISOString() })
-        .eq('email', email);
+      // Legacy user with is_paid but no date — assume they are valid
+      isSubscribed = true;
     }
   }
 

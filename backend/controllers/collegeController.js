@@ -93,7 +93,7 @@ exports.getCollegesList = async (req, res) => {
       .range(from, to);
 
     if (error) throw error;
-
+    
     return res.status(200).json({
       success: true,
       count: colleges.length,

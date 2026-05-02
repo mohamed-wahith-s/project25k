@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 const FloatingCallButton = () => {
   return (
     <motion.a
-      href="tel:+917550071233"
+      href="tel:+919597891731"
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       whileHover={{ scale: 1.1 }}

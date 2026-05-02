@@ -55,14 +55,14 @@ const Footer = () => {
               <ContactItem 
                 icon={<Phone size={18} className="text-primary-500" />} 
                 label="Admissions Help"
-                value="+91 75500 71233"
-                href="tel:+917550071233"
+                value="+91 95978 91731"
+                href="tel:+919597891731"
               />
               <ContactItem 
                 icon={<Mail size={18} className="text-primary-500" />} 
                 label="Email Support"
-                value="info@collegediaries.in"
-                href="mailto:info@collegediaries.in"
+                value="Collegediaries9597@gmail.com"
+                href="mailto:Collegediaries9597@gmail.com"
               />
               <ContactItem 
                 icon={<MapPin size={18} className="text-primary-500" />} 
@@ -82,7 +82,7 @@ const Footer = () => {
               Get personalized counseling for your dream college admission today.
             </p>
             <a 
-              href="tel:+917550071233"
+              href="tel:+919597891731"
               className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all w-full justify-center shadow-lg shadow-primary-900/40"
             >
               <span>Call Now</span>

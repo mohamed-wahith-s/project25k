@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowLeft, Building, MapPin, GraduationCap, Users, Zap } from 'lucide-react';
-import BranchComparisonTable from './BranchComparisonTable';
+import ProfessionalCollegeTable from '../ui/ProfessionalCollegeTable';
 
 export default function CollegeDetailView({ item, selectedCaste, selectedDept, onClose, onSubscribe }) {
   // rawRows = unmodified API rows for this college (passed from CollegeSearch/TNEADashboard)
@@ -59,12 +59,10 @@ export default function CollegeDetailView({ item, selectedCaste, selectedDept, o
                 <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-2 ml-13">Select a category to compare different branches</p>
               </div>
             </div>
-            
-            <BranchComparisonTable 
-              rawRows={rawRows} 
-              departments={departments} 
-              selectedCaste={selectedCaste}
-              selectedDept={selectedDept}
+            <ProfessionalCollegeTable 
+              college={item}
+              rawRows={rawRows}
+              userCaste={selectedCaste !== 'All' ? selectedCaste : null}
             />
           </section>
 

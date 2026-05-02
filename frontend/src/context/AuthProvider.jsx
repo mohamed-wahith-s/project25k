@@ -61,10 +61,25 @@ export const AuthProvider = ({ children }) => {
             setUser(profile);
             localStorage.setItem('user', JSON.stringify(profile));
           } else {
-            // Backend unreachable or profile row not created yet — use Supabase metadata
+            // Backend unreachable or profile row not created yet — use last known state if available
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              try {
+                const parsed = JSON.parse(storedUser);
+                // Ensure we only use it if the email matches the current session
+                if (parsed && parsed.email === session.user.email) {
+                  setUser(parsed);
+                  return;
+                }
+              } catch (e) {
+                console.warn('Failed to parse stored user:', e);
+              }
+            }
+            
+            // Otherwise use Supabase metadata
             const fallback = buildFallbackUser(session);
             setUser(fallback);
-            localStorage.setItem('user', JSON.stringify(fallback));
+            // Don't overwrite localStorage with fallback yet, let the user retry
           }
         } else {
           setUser(null);
@@ -97,11 +112,22 @@ export const AuthProvider = ({ children }) => {
               setUser(profile);
               localStorage.setItem('user', JSON.stringify(profile));
             } else {
-              // Still unavailable — fall back to Supabase metadata so the
-              // user is logged in and can use the app
+              // Backend unreachable — check localStorage for last known state
+              const storedUser = localStorage.getItem('user');
+              if (storedUser) {
+                try {
+                  const parsed = JSON.parse(storedUser);
+                  if (parsed && parsed.email === session.user.email) {
+                    setUser(parsed);
+                    return;
+                  }
+                } catch (e) {
+                   console.warn('Failed to parse stored user in listener:', e);
+                }
+              }
+
               const fallback = buildFallbackUser(session);
               setUser(fallback);
-              localStorage.setItem('user', JSON.stringify(fallback));
             }
           }
         } else if (event === 'SIGNED_OUT') {

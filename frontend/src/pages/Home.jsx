@@ -57,14 +57,6 @@ const Home = () => {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-gradient-to-b from-blue-50/50 to-transparent -z-10" />
         
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-blue-600 mb-8"
-          >
-            <Rocket size={14} />
-            <span className="text-xs font-black uppercase tracking-widest">TNEA Counseling 2025</span>
-          </motion.div>
           
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
@@ -138,7 +130,7 @@ const Home = () => {
       <section className="py-20 border-y border-slate-100">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
           <StatCard number="10K+" label="Students Guided" />
-          <StatCard number="500+" label="Partner Colleges" />
+          <StatCard number="400+" label="College Details" />
           <StatCard number="98%" label="Admission Success" />
           <StatCard number="20+" label="Expert Counselors" />
         </div>

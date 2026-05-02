@@ -117,6 +117,8 @@ const requirePaid = async (req, res, next) => {
       const paidDate = new Date(user.last_paid_date);
       const expiryDate = new Date(paidDate);
       expiryDate.setMonth(expiryDate.getMonth() + 3);
+      // Give 1 extra day of grace period to avoid timezone/midnight confusion
+      expiryDate.setDate(expiryDate.getDate() + 1);
 
       if (new Date() > expiryDate) {
         // Subscription expired — auto-flip is_paid to false
