@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input, Card } from '../components/ui';
@@ -11,12 +11,23 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  // pendingNav is set after a successful login; useEffect watches user and navigates once it's populated
+  const [pendingNav, setPendingNav] = useState(false);
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const navTimeoutRef = useRef(null);
 
   // Redirect back to where the user came from (e.g. /subscribe), default to /
   const from = location.state?.from || '/';
+
+  // When user becomes available after login, navigate to destination
+  useEffect(() => {
+    if (pendingNav && user) {
+      clearTimeout(navTimeoutRef.current);
+      navigate(from, { replace: true });
+    }
+  }, [pendingNav, user, from, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,7 +39,12 @@ const LoginPage = () => {
     setIsLoading(true);
     try {
       await login(email, password);
-      navigate(from, { replace: true });
+      // Signal that we want to navigate once the auth state resolves
+      setPendingNav(true);
+      // Safety fallback: if user state hasn't updated within 5 s, navigate anyway
+      navTimeoutRef.current = setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 5000);
     } catch (err) {
       const msg = err.message || '';
       // Map Supabase error messages to user-friendly text
@@ -43,6 +59,7 @@ const LoginPage = () => {
       } else {
         setError(msg || 'Login failed. Please try again.');
       }
+      setPendingNav(false);
     } finally {
       setIsLoading(false);
     }

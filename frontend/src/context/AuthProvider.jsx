@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AuthContext } from './AuthContext';
 import { useApiBase } from './ApiContext';
 import { supabase } from '../utils/supabase';
@@ -7,16 +7,19 @@ export const AuthProvider = ({ children }) => {
   const API_URL = useApiBase();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Tracks whether onAuthStateChange has already handled the current session,
+  // so initializeAuth doesn't race with it and double-set loading.
+  const authHandledRef = useRef(false);
 
   /**
    * Fetch the extended profile from our Express backend.
    * Returns null if the backend is unreachable or the profile row doesn't exist yet.
-   * Uses a 5-second timeout so a slow backend doesn't block the UI forever.
+   * Uses an 8-second timeout so a slow cold-start backend doesn't block the UI.
    */
   const fetchProfile = async (token) => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       const response = await fetch(`${API_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -49,38 +52,79 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
+  /**
+   * Resolves user state from a live Supabase session.
+   * Tries backend profile first, falls back to localStorage, then Supabase metadata.
+   */
+  const resolveUserFromSession = async (session, isSignIn = false) => {
+    let profile = await fetchProfile(session.access_token);
+
+    // After a fresh SIGNED_IN the DB row may not exist yet — retry once.
+    if (!profile && isSignIn) {
+      await new Promise((r) => setTimeout(r, 1500));
+      profile = await fetchProfile(session.access_token);
+    }
+
+    if (profile) {
+      setUser(profile);
+      localStorage.setItem('user', JSON.stringify(profile));
+      return;
+    }
+
+    // Backend unreachable — use last known localStorage state if email matches
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        if (parsed && parsed.email === session.user.email) {
+          setUser(parsed);
+          return;
+        }
+      } catch (e) {
+        console.warn('Failed to parse stored user:', e);
+      }
+    }
+
+    // Last resort: build from Supabase metadata
+    const fallback = buildFallbackUser(session);
+    setUser(fallback);
+  };
+
   useEffect(() => {
+    authHandledRef.current = false;
+
+    // ── Step 1: Subscribe FIRST so we don't miss any event that fires
+    //    before getSession() resolves.
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          authHandledRef.current = true; // signal initializeAuth to skip
+          if (session) {
+            await resolveUserFromSession(session, event === 'SIGNED_IN');
+          }
+          setLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          authHandledRef.current = true;
+          setUser(null);
+          localStorage.removeItem('user');
+          setLoading(false);
+        }
+        // PASSWORD_RECOVERY is handled in the ResetPassword page
+      }
+    );
+
+    // ── Step 2: Initialise from existing session (for hard refreshes).
+    //    If onAuthStateChange already handled it, just clear the spinner.
     const initializeAuth = async () => {
-      setLoading(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
 
+        // Give the listener a chance to fire first (it fires synchronously
+        // before getSession resolves when the session is from localStorage).
+        if (authHandledRef.current) return;
+
         if (session) {
-          const profile = await fetchProfile(session.access_token);
-          if (profile) {
-            setUser(profile);
-            localStorage.setItem('user', JSON.stringify(profile));
-          } else {
-            // Backend unreachable or profile row not created yet — use last known state if available
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-              try {
-                const parsed = JSON.parse(storedUser);
-                // Ensure we only use it if the email matches the current session
-                if (parsed && parsed.email === session.user.email) {
-                  setUser(parsed);
-                  return;
-                }
-              } catch (e) {
-                console.warn('Failed to parse stored user:', e);
-              }
-            }
-            
-            // Otherwise use Supabase metadata
-            const fallback = buildFallbackUser(session);
-            setUser(fallback);
-            // Don't overwrite localStorage with fallback yet, let the user retry
-          }
+          await resolveUserFromSession(session);
         } else {
           setUser(null);
           localStorage.removeItem('user');
@@ -95,49 +139,6 @@ export const AuthProvider = ({ children }) => {
 
     initializeAuth();
 
-    // Listen for auth state changes (login, logout, token refresh, etc.)
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          if (session) {
-            // After signup the DB trigger needs a moment to create the profile row.
-            // Try immediately, then retry once after 1.5 s if still null.
-            let profile = await fetchProfile(session.access_token);
-            if (!profile && event === 'SIGNED_IN') {
-              await new Promise((r) => setTimeout(r, 1500));
-              profile = await fetchProfile(session.access_token);
-            }
-
-            if (profile) {
-              setUser(profile);
-              localStorage.setItem('user', JSON.stringify(profile));
-            } else {
-              // Backend unreachable — check localStorage for last known state
-              const storedUser = localStorage.getItem('user');
-              if (storedUser) {
-                try {
-                  const parsed = JSON.parse(storedUser);
-                  if (parsed && parsed.email === session.user.email) {
-                    setUser(parsed);
-                    return;
-                  }
-                } catch (e) {
-                   console.warn('Failed to parse stored user in listener:', e);
-                }
-              }
-
-              const fallback = buildFallbackUser(session);
-              setUser(fallback);
-            }
-          }
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          localStorage.removeItem('user');
-        }
-        // PASSWORD_RECOVERY is handled in the ResetPassword page
-      }
-    );
-
     return () => {
       authListener?.subscription.unsubscribe();
     };
@@ -146,7 +147,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message);
-    // onAuthStateChange fires SIGNED_IN → sets user
+    // onAuthStateChange fires SIGNED_IN → sets user and loading=false
     return data;
   };
 
@@ -169,8 +170,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    setUser(null);
-    localStorage.removeItem('user');
+    // onAuthStateChange fires SIGNED_OUT and clears state
   };
 
   const updateUser = (data) => setUser((prev) => {

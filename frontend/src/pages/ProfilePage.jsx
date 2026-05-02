@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useApiBase } from '../context/ApiContext';
@@ -81,6 +81,25 @@ const ProfilePage = () => {
 
   const [errors,         setErrors]         = useState({});
   const [loadingPayment, setLoadingPayment] = useState(false);
+
+  // Re-populate form if user loads after mount (e.g. page refresh where auth is async)
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        studentName:  user.studentName || user.name || '',
+        email:        user.email        || '',
+        phone:        user.phone        || '',
+        physics:      user.physics      || '',
+        chemistry:    user.chemistry    || '',
+        maths:        user.maths        || '',
+        caste:        user.caste        || 'OC',
+        tneaRank:     user.tneaRank     || '',
+        fatherName:   user.fatherName   || '',
+        dob:          user.dob          || '',
+        address:      user.address      || '',
+      });
+    }
+  }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
