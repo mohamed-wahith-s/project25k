@@ -1,27 +1,81 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AuthContext } from './AuthContext';
 import { useApiBase } from './ApiContext';
 import { supabase } from '../utils/supabase';
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Read the last-known user from localStorage. Used for instant UI hydration
+ * on page load so users never see a logged-out flash while auth resolves.
+ */
+function readStoredUser() {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredUser(u) {
+  try {
+    if (u) localStorage.setItem('user', JSON.stringify(u));
+    else localStorage.removeItem('user');
+  } catch {}
+}
+
+function buildFallbackUser(session) {
+  const meta = session.user?.user_metadata || {};
+  return {
+    token: session.access_token,
+    email: session.user.email,
+    studentName: meta.full_name || meta.name || '',
+    phone: meta.phone || '',
+    date_of_birth: meta.date_of_birth || '',
+    isSubscribed: false,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const AuthProvider = ({ children }) => {
   const API_URL = useApiBase();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  // Tracks whether onAuthStateChange has already handled the current session,
-  // so initializeAuth doesn't race with it and double-set loading.
-  const authHandledRef = useRef(false);
 
-  /**
-   * Fetch the extended profile from our Express backend.
-   * Returns null if the backend is unreachable or the profile row doesn't exist yet.
-   * Uses an 8-second timeout so a slow cold-start backend doesn't block the UI.
-   */
-  const fetchProfile = async (token) => {
+  // Seed from localStorage immediately so the UI never flashes "logged out"
+  // while Supabase resolves the real session. We'll overwrite this with the
+  // fresh backend profile once it arrives.
+  const [user, setUserState] = useState(() => readStoredUser());
+  const [loading, setLoading] = useState(true);
+
+  // Keeps the latest API_URL accessible inside async callbacks without
+  // recreating them on every render.
+  const apiUrlRef = useRef(API_URL);
+  useEffect(() => { apiUrlRef.current = API_URL; }, [API_URL]);
+
+  // Prevent the onAuthStateChange listener and initializeAuth from racing.
+  const resolving = useRef(false);
+
+  // ── Setters that keep localStorage in sync ──────────────────────────────
+  const setUser = useCallback((u) => {
+    writeStoredUser(u);
+    setUserState(u);
+  }, []);
+
+  const clearUser = useCallback(() => {
+    // Clear storage FIRST so any re-render triggered by setUserState(null)
+    // immediately sees no stored user (prevents the "still logged in" flash).
+    localStorage.removeItem('user');
+    setUserState(null);
+  }, []);
+
+  // ── Backend profile fetch ────────────────────────────────────────────────
+  const fetchProfile = useCallback(async (token) => {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-      const response = await fetch(`${API_URL}/auth/profile`, {
+      const response = await fetch(`${apiUrlRef.current}/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` },
         signal: controller.signal,
       });
@@ -34,29 +88,10 @@ export const AuthProvider = ({ children }) => {
       console.warn('fetchProfile failed (backend may be unreachable):', err.message);
       return null;
     }
-  };
+  }, []);
 
-  /**
-   * Build a minimal user object from the Supabase session when the
-   * backend profile is unavailable (e.g. first signup, backend down).
-   */
-  const buildFallbackUser = (session) => {
-    const meta = session.user?.user_metadata || {};
-    return {
-      token: session.access_token,
-      email: session.user.email,
-      studentName: meta.full_name || meta.name || '',
-      phone: meta.phone || '',
-      date_of_birth: meta.date_of_birth || '',
-      isSubscribed: false,
-    };
-  };
-
-  /**
-   * Resolves user state from a live Supabase session.
-   * Tries backend profile first, falls back to localStorage, then Supabase metadata.
-   */
-  const resolveUserFromSession = async (session, isSignIn = false) => {
+  // ── Resolve user from a live Supabase session ────────────────────────────
+  const resolveUserFromSession = useCallback(async (session, isSignIn = false) => {
     let profile = await fetchProfile(session.access_token);
 
     // After a fresh SIGNED_IN the DB row may not exist yet — retry once.
@@ -67,87 +102,105 @@ export const AuthProvider = ({ children }) => {
 
     if (profile) {
       setUser(profile);
-      localStorage.setItem('user', JSON.stringify(profile));
       return;
     }
 
-    // Backend unreachable — use last known localStorage state if email matches
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        if (parsed && parsed.email === session.user.email) {
-          setUser(parsed);
-          return;
-        }
-      } catch (e) {
-        console.warn('Failed to parse stored user:', e);
-      }
+    // Backend unreachable — reuse stored user if email matches, else fallback.
+    const stored = readStoredUser();
+    if (stored && stored.email === session.user.email) {
+      // Refresh the token in case it changed.
+      setUser({ ...stored, token: session.access_token });
+      return;
     }
 
-    // Last resort: build from Supabase metadata
-    const fallback = buildFallbackUser(session);
-    setUser(fallback);
-  };
+    setUser(buildFallbackUser(session));
+  }, [fetchProfile, setUser]);
 
+  // ── Auth lifecycle ────────────────────────────────────────────────────────
   useEffect(() => {
-    authHandledRef.current = false;
+    let mounted = true;
 
-    // ── Step 1: Subscribe FIRST so we don't miss any event that fires
-    //    before getSession() resolves.
+    // ── 1. Subscribe to auth events ─────────────────────────────────────────
+    // Supabase v2 fires INITIAL_SESSION on every page load for existing
+    // sessions (including hard refreshes), so we handle it here instead of
+    // relying on a separate getSession() call that can race.
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          authHandledRef.current = true; // signal initializeAuth to skip
+        if (!mounted) return;
+
+        if (event === 'INITIAL_SESSION') {
+          // This fires on page load. It tells us about the existing session.
           if (session) {
-            await resolveUserFromSession(session, event === 'SIGNED_IN');
+            // Don't wait for the backend if we already have a matching stored
+            // user — show it instantly and refresh in the background.
+            const stored = readStoredUser();
+            if (stored && stored.email === session.user.email) {
+              setUserState(stored); // already in localStorage, skip setUser to avoid double write
+              setLoading(false);
+              // Refresh profile from backend silently
+              if (!resolving.current) {
+                resolving.current = true;
+                fetchProfile(session.access_token).then(fresh => {
+                  if (fresh && mounted) setUser(fresh);
+                  resolving.current = false;
+                });
+              }
+            } else {
+              // No stored user or different account — must wait for backend.
+              if (!resolving.current) {
+                resolving.current = true;
+                await resolveUserFromSession(session);
+                resolving.current = false;
+              }
+              if (mounted) setLoading(false);
+            }
+          } else {
+            // No session at all (logged out).
+            clearUser();
+            if (mounted) setLoading(false);
           }
-          setLoading(false);
-        } else if (event === 'SIGNED_OUT') {
-          authHandledRef.current = true;
-          setUser(null);
-          localStorage.removeItem('user');
-          setLoading(false);
+          return;
         }
-        // PASSWORD_RECOVERY is handled in the ResetPassword page
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (session && !resolving.current) {
+            resolving.current = true;
+            await resolveUserFromSession(session, event === 'SIGNED_IN');
+            resolving.current = false;
+          }
+          if (mounted) setLoading(false);
+          return;
+        }
+
+        if (event === 'SIGNED_OUT') {
+          // Clear storage before updating state so there's zero window
+          // where the UI can read stale data from localStorage.
+          clearUser();
+          if (mounted) setLoading(false);
+          return;
+        }
       }
     );
 
-    // ── Step 2: Initialise from existing session (for hard refreshes).
-    //    If onAuthStateChange already handled it, just clear the spinner.
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        // Give the listener a chance to fire first (it fires synchronously
-        // before getSession resolves when the session is from localStorage).
-        if (authHandledRef.current) return;
-
-        if (session) {
-          await resolveUserFromSession(session);
-        } else {
-          setUser(null);
-          localStorage.removeItem('user');
-        }
-      } catch (err) {
-        console.error('Auth initialization error:', err);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
+    // ── 2. If Supabase doesn't fire INITIAL_SESSION within 10 s, give up ──
+    // (safety net — should never trigger in practice)
+    const giveUp = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 10000);
 
     return () => {
+      mounted = false;
+      clearTimeout(giveUp);
       authListener?.subscription.unsubscribe();
     };
-  }, [API_URL]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // ── Auth actions ──────────────────────────────────────────────────────────
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message);
-    // onAuthStateChange fires SIGNED_IN → sets user and loading=false
+    // onAuthStateChange fires SIGNED_IN → sets user
     return data;
   };
 
@@ -164,20 +217,23 @@ export const AuthProvider = ({ children }) => {
       },
     });
     if (error) throw new Error(error.message);
-    // onAuthStateChange fires SIGNED_IN → sets user
     return data;
   };
 
   const logout = async () => {
+    // Optimistically clear local state first so the UI snaps immediately.
+    clearUser();
     await supabase.auth.signOut();
-    // onAuthStateChange fires SIGNED_OUT and clears state
+    // SIGNED_OUT event from onAuthStateChange will call clearUser() again — that's fine.
   };
 
-  const updateUser = (data) => setUser((prev) => {
-    const updated = { ...prev, ...data };
-    localStorage.setItem('user', JSON.stringify(updated));
-    return updated;
-  });
+  const updateUser = (data) => {
+    setUserState((prev) => {
+      const updated = { ...prev, ...data };
+      writeStoredUser(updated);
+      return updated;
+    });
+  };
 
   return (
     <AuthContext.Provider value={{ user, login, signup, logout, updateUser, loading }}>

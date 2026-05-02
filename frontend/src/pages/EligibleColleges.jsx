@@ -17,19 +17,24 @@ const PAGE_SIZE = 20;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
 export default function EligibleColleges() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { isSubscribed } = useSubscription();
   const navigate = useNavigate();
   const API_BASE = useApiBase();
 
-  let userCutoff = parseFloat(user?.cutoff ?? user?.cutoff_mark ?? '');
-  if (!Number.isFinite(userCutoff) && user?.physics_mark != null && user?.chemistry_mark != null && user?.maths_mark != null) {
-    userCutoff = (parseFloat(user.physics_mark) / 2) + (parseFloat(user.chemistry_mark) / 2) + parseFloat(user.maths_mark);
-  }
-  const userCaste  = user?.caste || '';
+  // Memoize so the fetch effect dep array stays stable across parent re-renders
+  const userCutoff = useMemo(() => {
+    let c = parseFloat(user?.cutoff ?? user?.cutoff_mark ?? '');
+    if (!Number.isFinite(c) && user?.physics_mark != null && user?.chemistry_mark != null && user?.maths_mark != null) {
+      c = (parseFloat(user.physics_mark) / 2) + (parseFloat(user.chemistry_mark) / 2) + parseFloat(user.maths_mark);
+    }
+    return Number.isFinite(c) ? c : null;
+  }, [user?.cutoff, user?.cutoff_mark, user?.physics_mark, user?.chemistry_mark, user?.maths_mark]);
 
-  // ── Incomplete-profile guard ──────────────────────────────────────────────
-  const profileIncomplete = !userCaste || !Number.isFinite(userCutoff);
+  const userCaste = useMemo(() => user?.caste || '', [user?.caste]);
+
+  // Only consider the profile incomplete once auth has finished loading
+  const profileIncomplete = !authLoading && (!userCaste || userCutoff === null);
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [departments,   setDepartments]   = useState([]);
@@ -90,7 +95,11 @@ export default function EligibleColleges() {
 
   // ── Fetch eligible college catalog ───────────────────────────────────────
   useEffect(() => {
-    if (!isSubscribed || profileIncomplete) return;
+    // If auth is still resolving, show spinner and wait
+    if (authLoading) { setLoading(true); return; }
+    // Not subscribed or profile not filled → stop spinner, show gate
+    if (!isSubscribed || profileIncomplete) { setLoading(false); return; }
+
     const ctrl = new AbortController();
     setLoading(true);
     (async () => {
@@ -118,7 +127,7 @@ export default function EligibleColleges() {
       }
     })();
     return () => ctrl.abort();
-  }, [isSubscribed, profileIncomplete, selectedDept, userCaste, userCutoff]);
+  }, [authLoading, isSubscribed, profileIncomplete, selectedDept, userCaste, userCutoff]);
   
   // Reset to page 1 on search change
   useEffect(() => {
@@ -190,6 +199,15 @@ export default function EligibleColleges() {
       setDetailLoading(false);
     }
   };
+
+  // ── Show global spinner while auth is resolving ───────────────────────────
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 size={36} className="text-indigo-500 animate-spin" />
+      </div>
+    );
+  }
 
   // ── Not subscribed ────────────────────────────────────────────────────────
   if (!isSubscribed) {

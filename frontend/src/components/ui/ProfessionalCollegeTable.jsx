@@ -9,7 +9,7 @@ export default function ProfessionalCollegeTable({ college, rawRows = [], userCa
     ? [userCaste] 
     : communities;
 
-  const colSpanHeader = displayCommunities.length + 4;
+  const colSpanHeader = displayCommunities.length + 3;
 
   // 1. Group rows by department
   const byDept = {};
@@ -99,7 +99,6 @@ export default function ProfessionalCollegeTable({ college, rawRows = [], userCa
             {displayCommunities.map(c => (
               <th key={c} className="border border-slate-300 px-2 py-3 text-center w-16">{c}</th>
             ))}
-            <th className="border border-slate-300 px-2 py-3 text-center w-28">TOTAL SEATS</th>
           </tr>
         </thead>
         <tbody>
@@ -127,7 +126,6 @@ export default function ProfessionalCollegeTable({ college, rawRows = [], userCa
                   {displayCommunities.map(c => (
                     <td key={c} className="border border-slate-300 px-2 py-2 text-center font-bold text-[11px]">{dept.cutoffs[c] || '—'}</td>
                   ))}
-                  <td className="border border-slate-300 px-2 py-2 text-center font-black text-[11px] bg-slate-50" rowSpan={3}>{displayTotalSeats}</td>
                 </tr>
                 {/* Row 2: Rank */}
                 <tr className="bg-[#fffbeb] text-amber-900/80">
@@ -149,8 +147,9 @@ export default function ProfessionalCollegeTable({ college, rawRows = [], userCa
         </tbody>
         <tfoot>
           <tr className="bg-slate-100 text-slate-800">
-            <td colSpan={colSpanHeader - 1} className="border border-slate-300 text-right pr-6 font-black py-3 uppercase tracking-widest text-[10px]">TOTAL SEATS FILLED ACROSS ALL CATEGORIES</td>
-            <td className="border border-slate-300 text-center font-black py-3 text-xs">{overallSeatsFilling}/{overallTotalSeats > 0 ? overallTotalSeats : '-'}</td>
+            <td colSpan={colSpanHeader} className="border border-slate-300 text-right pr-6 font-black py-3 uppercase tracking-widest text-[10px]">
+              Total Seats Filled Across All Categories: {overallSeatsFilling}/{overallTotalSeats > 0 ? overallTotalSeats : '-'}
+            </td>
           </tr>
           <tr className="bg-[#1e1b4b] text-white/80">
             <td colSpan={colSpanHeader} className="border border-slate-300 text-center font-black py-3 uppercase tracking-[0.4em] text-[9px]">
