@@ -21,7 +21,7 @@ const Footer = () => {
               <div>
                 <h3 className="text-xl font-bold text-white tracking-tight">College Diaries</h3>
                 <p className="text-primary-500 text-[10px] font-bold uppercase tracking-[0.2em] -mt-1">
-                  by Dhanasekaran
+                  Gateway to your Dream College
                 </p>
               </div>
             </div>

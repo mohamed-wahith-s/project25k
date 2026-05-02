@@ -23,14 +23,14 @@ const fadeIn = (delay = 0) => ({
   transition: { duration: 0.5, delay },
 });
 
-/* ── TNEA 2025 key dates ── */
+/* ── TNEA 2026 key dates ── */
 const TNEA_DATES = [
-  { label: 'Application Open',     date: 'Apr 2025',  done: true  },
-  { label: 'Certificate Verification', date: 'May 2025', done: true },
-  { label: 'Random Number Release', date: 'Jun 2025',  done: false },
-  { label: 'Round 1 Choice Fill',   date: 'Jul 2025',  done: false },
-  { label: 'Round 2 Allotment',     date: 'Aug 2025',  done: false },
-  { label: 'Round 3 Special',       date: 'Sep 2025',  done: false },
+  { label: 'Application Open',     date: 'Apr 2026',  done: true  },
+  { label: 'Certificate Verification', date: 'May 2026', done: true },
+  { label: 'Random Number Release', date: 'Jun 2026',  done: false },
+  { label: 'Round 1 Choice Fill',   date: 'Jul 2026',  done: false },
+  { label: 'Round 2 Allotment',     date: 'Aug 2026',  done: false },
+  { label: 'Round 3 Special',       date: 'Sep 2026',  done: false },
 ];
 
 /* ── Platform features ── */
@@ -422,11 +422,11 @@ const Dashboard = () => {
           </div>
         </motion.section>
 
-        {/* ── 5. TNEA 2025 TIMELINE ───────────────────────── */}
+        {/* ── 5. TNEA 2026 TIMELINE ───────────────────────── */}
         <motion.section {...fadeUp(0.3)}>
           <SectionHeader
             eyebrow="Important Dates"
-            title="TNEA 2025 Timeline"
+            title="TNEA 2026 Timeline"
             subtitle="Track key milestones in this year's counseling process"
           />
           <div className="bg-white rounded-3xl border border-slate-100 p-5 sm:p-6 shadow-sm overflow-hidden relative">
