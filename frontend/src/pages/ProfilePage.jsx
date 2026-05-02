@@ -120,7 +120,7 @@ const ProfilePage = () => {
       const orderRes = await fetch(`${API_URL}/payment/create-order`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
-        body:    JSON.stringify({ planId: 'premium', amount: 200, metadata }),
+        body:    JSON.stringify({ planId: 'premium', amount: 199, metadata }),
       });
       const orderData = await orderRes.json();
       if (!orderData.success) throw new Error(orderData.message || 'Failed to create order');

@@ -298,7 +298,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                         className="inline-flex items-center space-x-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-black shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all"
                       >
                         <Crown size={13} />
-                        <span>Upgrade to Pro — ₹200</span>
+                        <span>Upgrade to Pro — <span className="line-through opacity-70 mr-1">₹499</span>₹199</span>
                         <ChevronRight size={13} />
                       </Link>
                     </div>

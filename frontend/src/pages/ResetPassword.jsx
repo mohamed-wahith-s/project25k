@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { GraduationCap, Lock, Eye, EyeOff, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle2, ShieldCheck, AlertCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '../utils/supabase';
 import { Button, Input, Card } from '../components/ui';
 
@@ -12,14 +12,25 @@ const ResetPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
   const navigate = useNavigate();
 
-  // Handle Supabase session recovery from URL hash
   useEffect(() => {
-    // When the user is redirected here, Supabase appends #access_token=... to the URL.
-    // The Supabase client automatically picks this up.
-    // We can listen for the password recovery event to be certain.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const checkSession = async () => {
+      // Supabase automatically parses the #access_token from the URL hash 
+      // and creates a temporary session.
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.error("No session found in ResetPassword. Link might be expired or invalid.");
+        setError("Invalid or expired reset link. Please request a new one from the forgot password page.");
+      }
+      setIsVerifying(false);
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === 'PASSWORD_RECOVERY') {
         console.log('Password recovery mode active');
       }
@@ -31,7 +42,6 @@ const ResetPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // 1. Validation
     if (password.length < 6) {
       setError('Password must be at least 6 characters long');
       return;
@@ -45,8 +55,6 @@ const ResetPassword = () => {
     setError('');
 
     try {
-      // 2. Update the user password
-      // Since the user is already "authenticated" via the link, we just update the user.
       const { error: updateError } = await supabase.auth.updateUser({
         password: password
       });
@@ -55,7 +63,6 @@ const ResetPassword = () => {
 
       setIsSuccess(true);
       
-      // Auto redirect to login after 3 seconds
       setTimeout(() => {
         navigate('/login');
       }, 3000);
@@ -67,6 +74,17 @@ const ResetPassword = () => {
       setIsLoading(false);
     }
   };
+
+  if (isVerifying) {
+    return (
+      <div className="min-h-[90vh] flex items-center justify-center p-4 bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          <p className="text-slate-500 font-medium animate-pulse">Verifying reset link...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isSuccess) {
     return (
@@ -108,7 +126,22 @@ const ResetPassword = () => {
           <p className="text-slate-500 mt-2 text-sm">Create a new secure password for your account</p>
         </div>
 
-        <Card className="shadow-2xl shadow-slate-200/50">
+        <Card className="shadow-2xl shadow-slate-200/50 p-6">
+          {error && !isVerifying && !password && (
+             <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex flex-col items-center text-center gap-3">
+                <AlertCircle className="text-red-500" size={24} />
+                <p className="text-red-700 text-sm font-medium">{error}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigate('/forgot-password')}
+                  className="mt-2"
+                >
+                  Request New Link
+                </Button>
+             </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               {/* New Password */}
@@ -123,6 +156,7 @@ const ResetPassword = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-11 pr-11"
                   required
+                  disabled={!!error && !password}
                 />
                 <button
                   type="button"
@@ -145,13 +179,14 @@ const ResetPassword = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="pl-11"
                   required
+                  disabled={!!error && !password}
                 />
               </div>
             </div>
 
-            {error && (
+            {error && password && (
               <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100 flex items-center gap-2">
-                <span>⚠️</span>
+                <AlertCircle size={16} />
                 <span>{error}</span>
               </div>
             )}
@@ -161,9 +196,19 @@ const ResetPassword = () => {
               className="w-full"
               isLoading={isLoading}
               size="lg"
+              disabled={!!error && !password}
             >
               Update Password
             </Button>
+            
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="w-full flex items-center justify-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors pt-2"
+            >
+              <ArrowLeft size={16} />
+              Back to Login
+            </button>
           </form>
         </Card>
       </motion.div>
@@ -172,3 +217,4 @@ const ResetPassword = () => {
 };
 
 export default ResetPassword;
+

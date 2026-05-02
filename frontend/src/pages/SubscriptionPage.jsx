@@ -7,7 +7,7 @@ import { Check, Sparkles, Lock, LogIn, GraduationCap, Star, ShieldCheck, Clock }
 import { motion } from 'framer-motion';
 import { loadRazorpayScript } from '../utils/razorpayUtils';
 
-const PLAN_AMOUNT = 200; // INR
+const PLAN_AMOUNT = 199; // INR
 
 const SubscriptionPage = () => {
   const { user, updateUser } = useAuth();
@@ -87,7 +87,10 @@ const SubscriptionPage = () => {
             </div>
             <div className="text-center mb-6">
               <p className="text-slate-500 text-sm font-semibold mb-1">Premium Access</p>
-              <p className="text-5xl font-black text-slate-900">₹200</p>
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-2xl font-bold text-slate-300 line-through">₹499</span>
+                <span className="text-5xl font-black text-slate-900">₹199</span>
+              </div>
               <p className="text-slate-400 text-sm mt-1">for 3 months</p>
             </div>
             <ul className="space-y-3 mb-8 text-sm text-slate-700">
@@ -111,7 +114,7 @@ const SubscriptionPage = () => {
                 <p className="text-xs font-bold text-slate-500">Login to unlock</p>
               </div>
               <div className="opacity-30 pointer-events-none py-3 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-center">
-                Subscribe — ₹200
+                Subscribe — ₹199
               </div>
             </div>
           </div>
@@ -266,7 +269,10 @@ const SubscriptionPage = () => {
 
           <div className="text-center mb-6">
             <p className="text-slate-500 text-sm font-semibold mb-1">Premium Access</p>
-            <p className="text-5xl font-black text-slate-900">₹200</p>
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-2xl font-bold text-slate-300 line-through">₹499</span>
+              <span className="text-5xl font-black text-slate-900">₹199</span>
+            </div>
             <p className="text-slate-400 text-sm mt-1 flex items-center justify-center space-x-1">
               <Clock size={13} />
               <span>3-month access · auto-expires</span>
@@ -310,7 +316,7 @@ const SubscriptionPage = () => {
             ) : (
               <>
                 <GraduationCap size={16} />
-                <span>Pay ₹200 &amp; Activate Pro</span>
+                <span>Pay ₹199 &amp; Activate Pro</span>
               </>
             )}
           </button>
