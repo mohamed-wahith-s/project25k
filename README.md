@@ -260,7 +260,7 @@ The frontend is fully responsive across all screen sizes:
   - **Floating Stat Cards** — **TNEA Cutoff** (Calculated from Physics, Chemistry, Maths), Caste Category, TNEA Rank (3 cards, no Eligibility)
   - **Quick Actions** — College Search card + Pro upgrade card (free users) or Active Pro card (subscribed users)
   - **Platform Features** — 3 cards (Smart College Search · Free, Cutoff Analytics · Pro, Expert Counseling · Pro)
-  - **TNEA 2025 Timeline** — 6 key milestones with done/upcoming states and official source note
+  - **TNEA 2026 Timeline** — 6 key milestones with done/upcoming states and official source note
   - **Stats Band** — dark gradient strip with 10K+ students, 500+ colleges, 98% success, 20+ counselors
   - **Upgrade CTA** — full-width premium banner (only shown to free users) with pricing + feature list
 - **Mobile Responsiveness Enhancements:**

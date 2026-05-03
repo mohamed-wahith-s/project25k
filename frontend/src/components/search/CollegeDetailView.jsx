@@ -67,7 +67,7 @@ export default function CollegeDetailView({ item, selectedCaste, selectedDept, o
           </section>
 
           <footer className="pt-20 pb-10 border-t border-slate-200 text-center">
-            <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em]">Tamilnadu Engineering Admissions Directory ● 2024</p>
+            <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em]">Tamilnadu Engineering Admissions Directory ● 2025</p>
           </footer>
         </div>
       </div>

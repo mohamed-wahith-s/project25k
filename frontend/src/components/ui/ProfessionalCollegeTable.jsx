@@ -69,8 +69,8 @@ export default function ProfessionalCollegeTable({ college, rawRows = [], userCa
   const collegeCode = college?.code || college?.college_code || '';
   const collegeAddress = college?.location || college?.college_address || '';
 
-  // Current year for the header
-  const currentYear = new Date().getFullYear();
+  // Data is for 2025
+  const currentYear = 2025;
 
   if (departments.length === 0) {
     return (

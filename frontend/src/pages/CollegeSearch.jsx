@@ -16,9 +16,8 @@ const PAGE_SIZE = 20;
 // These colleges are shown in full to ALL users, including those without
 // a premium subscription. Keep in sync with backend FREE_COLLEGE_CODES.
 const FREE_COLLEGE_CODES = new Set([
-  '1', '2', '3', '4', '5',
-  '1516', '2005', '2369', '2603', '2615',
-  '2709', '3464', '3465', '4974', '5009',
+  '1', '4', '2005', '2006', '2007',
+  '5008', '1414', '2712', '1399', '2718',
 ]);
 
 
