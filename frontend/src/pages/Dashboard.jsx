@@ -286,7 +286,7 @@ const Dashboard = () => {
                 >
                   <Star size={26} className="text-amber-400 group-hover:scale-110 transition-transform" />
                   <span className="text-amber-400 text-xs font-black uppercase tracking-widest">Upgrade to Pro</span>
-                  <span className="text-slate-500 text-[10px] font-medium"><span className="line-through opacity-60 mr-1">₹499</span>₹199 · 3 months</span>
+                  <span className="text-slate-500 text-[10px] font-medium"><span className="line-through opacity-60 mr-1">₹499</span>₹99 · 3 months</span>
                 </button>
               )}
             </motion.div>
@@ -350,8 +350,8 @@ const Dashboard = () => {
                 glow="group-hover:shadow-amber-100"
                 title="Unlock Pro Access"
                 titleTamil="Pro அணுகல்"
-                description="Get full Round 2 & 3 cutoff data, AI counseling assistant, choice-fill optimizer and more for ₹199."
-                tag="₹199 / 3 months"
+                description="Get full Round 2 & 3 cutoff data, AI counseling assistant, choice-fill optimizer and more for ₹99."
+                tag="₹99 / 3 months"
                 tagClass="bg-amber-50 text-amber-700 border-amber-200"
                 onClick={() => navigate('/subscribe')}
                 cta="Upgrade Now"
@@ -508,7 +508,7 @@ const Dashboard = () => {
                     Ready to Secure<br className="hidden sm:block" />Your Dream Seat?
                   </h2>
                   <p className="text-indigo-200 text-sm sm:text-base font-medium max-w-lg leading-relaxed">
-                    Get full Round 2 & 3 cutoff data, AI-powered choice filling optimizer, and direct counselor access — all for just ₹199.
+                    Get full Round 2 & 3 cutoff data, AI-powered choice filling optimizer, and direct counselor access — all for just ₹99.
                   </p>
                   <div className="flex flex-wrap justify-center md:justify-start gap-2 sm:gap-3 mt-4 sm:mt-5">
                     {['Round 2 & 3 Cutoffs', 'AI Choice Fill', 'Expert Sessions', 'Rank Analytics'].map((f) => (
@@ -524,7 +524,7 @@ const Dashboard = () => {
                     <p className="text-white/60 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1">One-time</p>
                     <div className="flex items-center justify-center gap-2">
                       <span className="text-xl sm:text-2xl font-bold text-white/50 line-through">₹499</span>
-                      <span className="text-4xl sm:text-5xl font-black text-white">₹199</span>
+                      <span className="text-4xl sm:text-5xl font-black text-white">₹99</span>
                     </div>
                     <p className="text-indigo-300 text-[10px] sm:text-xs font-medium mt-1">for 3 months access</p>
                   </div>
