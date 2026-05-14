@@ -6,7 +6,7 @@ import {
   Search, ArrowRight, GraduationCap, Shield, Trophy,
   Star, Sparkles, BookOpen, BarChart3, MessageCircle,
   CheckCircle2, Clock, Zap, TrendingUp, Users, Crown,
-  ChevronRight, CalendarDays, Info, Target, User
+  ChevronRight, CalendarDays, Info, Target, User, Gift
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -140,6 +140,77 @@ const Dashboard = () => {
             </motion.div>
           </div>
         </section>
+
+        {/* ── Scholarship Offer Banner (guest) ── */}
+        <motion.div
+          {...fadeUp(0.15)}
+          className="max-w-5xl mx-auto px-4 sm:px-6 mt-6 mb-4"
+        >
+          <div
+            onClick={() => {}}
+            className="relative rounded-3xl overflow-hidden cursor-pointer"
+            style={{
+              background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 30%, #7c3aed 55%, #c026d3 85%, #ec4899 100%)',
+            }}
+          >
+            {/* Decorative blobs */}
+            <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #f472b6 0%, transparent 70%)', transform: 'translate(30%, -40%)' }} />
+            <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #818cf8 0%, transparent 70%)', transform: 'translate(-30%, 40%)' }} />
+            {/* Sparkle dots */}
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+
+            <div className="relative flex flex-col md:flex-row items-center gap-5 p-5 sm:p-7">
+              {/* Left: coin illustration area */}
+              <div className="flex-shrink-0 flex items-center justify-center w-28 h-28 sm:w-32 sm:h-32 relative">
+                {/* Gold coin */}
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-yellow-300" style={{ background: 'linear-gradient(145deg, #fbbf24, #f59e0b, #d97706)' }}>
+                  <span className="text-yellow-900 text-[9px] font-black uppercase tracking-wider">UP TO</span>
+                  <span className="text-white text-base sm:text-lg font-black leading-tight">₹20,000</span>
+                </div>
+                {/* Graduation cap emoji / sparkles */}
+                <span className="absolute -top-2 -right-2 text-2xl">🎓</span>
+                <span className="absolute -bottom-1 -left-1 text-xl">✨</span>
+              </div>
+
+              {/* Middle: text */}
+              <div className="flex-1 text-center md:text-left">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-widest mb-3">
+                  <Gift size={11} /> Exclusive Member Benefit
+                </div>
+                <h2 className="text-white text-xl sm:text-2xl font-black leading-tight mb-2">
+                  Get Scholarship Support<br />up to <span className="text-yellow-300">₹20,000!</span>
+                </h2>
+                <p className="text-purple-200 text-xs sm:text-sm font-medium leading-relaxed max-w-sm">
+                  Become a College Diaries Pro Active Member and unlock exclusive scholarship opportunities for eligible students.
+                </p>
+                {/* Feature pills */}
+                <div className="flex flex-wrap gap-3 mt-3 justify-center md:justify-start">
+                  {[
+                    { icon: '👥', label: 'Personalized Counseling' },
+                    { icon: '📊', label: 'Cutoff Analytics' },
+                    { icon: '🏛️', label: 'College Prediction' },
+                    { icon: '🎓', label: 'Scholarship Guidance' },
+                  ].map((f) => (
+                    <span key={f.label} className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-purple-100">
+                      <span>{f.icon}</span>{f.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: CTA */}
+              <div className="flex-shrink-0">
+                <Link
+                  to="/login"
+                  className="flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm shadow-xl hover:-translate-y-0.5 transition-all"
+                  style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', color: '#1c1917' }}
+                >
+                  Upgrade Now <ArrowRight size={15} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Mini stats band */}
         <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-10 relative z-10 mb-16">
@@ -295,7 +366,7 @@ const Dashboard = () => {
       </section>
 
       {/* ── 2. FLOATING STAT CARDS ──────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-10 sm:-mt-12 relative z-10 mb-10 sm:mb-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-10 sm:-mt-12 relative z-10 mb-6 sm:mb-8">
         <motion.div {...fadeUp(0.1)} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
           <StatCard
             icon={<Target size={20} />}
@@ -320,6 +391,74 @@ const Dashboard = () => {
           />
         </motion.div>
       </div>
+
+      {/* ── Scholarship Offer Banner (non-subscribed logged-in users) ── */}
+      {!isSubscribed && (
+        <motion.div
+          {...fadeUp(0.18)}
+          className="max-w-7xl mx-auto px-4 sm:px-6 mb-6 sm:mb-8"
+        >
+          <div
+            onClick={() => navigate('/subscribe')}
+            className="relative rounded-3xl overflow-hidden cursor-pointer"
+            style={{
+              background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 30%, #7c3aed 55%, #c026d3 85%, #ec4899 100%)',
+            }}
+          >
+            {/* Decorative blobs */}
+            <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #f472b6 0%, transparent 70%)', transform: 'translate(30%, -40%)' }} />
+            <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #818cf8 0%, transparent 70%)', transform: 'translate(-30%, 40%)' }} />
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+
+            <div className="relative flex flex-col md:flex-row items-center gap-5 p-5 sm:p-7">
+              {/* Left: coin */}
+              <div className="flex-shrink-0 flex items-center justify-center w-28 h-28 sm:w-32 sm:h-32 relative">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-yellow-300" style={{ background: 'linear-gradient(145deg, #fbbf24, #f59e0b, #d97706)' }}>
+                  <span className="text-yellow-900 text-[9px] font-black uppercase tracking-wider">UP TO</span>
+                  <span className="text-white text-base sm:text-lg font-black leading-tight">₹20,000</span>
+                </div>
+                <span className="absolute -top-2 -right-2 text-2xl">🎓</span>
+                <span className="absolute -bottom-1 -left-1 text-xl">✨</span>
+              </div>
+
+              {/* Middle: text */}
+              <div className="flex-1 text-center md:text-left">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-widest mb-3">
+                  <Gift size={11} /> Exclusive Member Benefit
+                </div>
+                <h2 className="text-white text-xl sm:text-2xl font-black leading-tight mb-2">
+                  Get Scholarship Support<br />up to <span className="text-yellow-300">₹20,000!</span>
+                </h2>
+                <p className="text-purple-200 text-xs sm:text-sm font-medium leading-relaxed max-w-sm">
+                  Become a College Diaries Pro Active Member and unlock exclusive scholarship opportunities for eligible students.
+                </p>
+                <div className="flex flex-wrap gap-3 mt-3 justify-center md:justify-start">
+                  {[
+                    { icon: '👥', label: 'Personalized Counseling' },
+                    { icon: '📊', label: 'Cutoff Analytics' },
+                    { icon: '🏛️', label: 'College Prediction' },
+                    { icon: '🎓', label: 'Scholarship Guidance' },
+                  ].map((f) => (
+                    <span key={f.label} className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-purple-100">
+                      <span>{f.icon}</span>{f.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: CTA */}
+              <div className="flex-shrink-0">
+                <button
+                  className="flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm shadow-xl hover:-translate-y-0.5 transition-all"
+                  style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', color: '#1c1917' }}
+                >
+                  Upgrade Now <ArrowRight size={15} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 sm:pb-24 space-y-16 sm:space-y-20">
 

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Building, Filter, MapPin, GraduationCap,
   AlertTriangle, Lock, ChevronRight, Award, Loader2,
-  Target, BookOpen, Users, Settings, Search,
+  Target, BookOpen, Users, Settings, Search, ShieldCheck,
 } from 'lucide-react';
 import { useApiBase } from '../context/ApiContext';
 import ProfessionalCollegeTable from '../components/ui/ProfessionalCollegeTable';
@@ -397,6 +397,57 @@ export default function EligibleColleges() {
                </div>
              </div>
           </div>
+
+          {/* Scholarship Contact Banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="max-w-3xl mx-auto mt-5"
+          >
+            <div
+              className="flex items-center gap-4 rounded-2xl px-5 py-4 border"
+              style={{
+                background: 'linear-gradient(135deg, #ede9fe 0%, #f5f3ff 60%, #faf5ff 100%)',
+                borderColor: '#c4b5fd',
+              }}
+            >
+              {/* Left graduation cap with coin */}
+              <div className="flex-shrink-0 relative">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
+                  <GraduationCap size={24} className="text-white" />
+                </div>
+                <div
+                  className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white text-[8px] font-black text-white"
+                  style={{ background: '#f59e0b' }}
+                >
+                  ₹
+                </div>
+              </div>
+
+              {/* Left border accent */}
+              <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: '#7c3aed' }} />
+
+              {/* Text */}
+              <div className="flex-1 text-left">
+                <p className="text-sm font-black leading-snug" style={{ color: '#5b21b6' }}>
+                  The College Diaries team will contact you shortly with instructions on how to receive the scholarship.
+                </p>
+                <p className="text-xs font-medium mt-1" style={{ color: '#7c3aed', opacity: 0.7 }}>
+                  This is subject to certain conditions.
+                </p>
+              </div>
+
+              {/* Shield checkmark */}
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #6d28d9, #5b21b6)' }}>
+                  <ShieldCheck size={20} className="text-white" />
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
 
