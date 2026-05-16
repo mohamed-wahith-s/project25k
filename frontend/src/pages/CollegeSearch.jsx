@@ -290,11 +290,22 @@ const CollegeSearch = () => {
       const res = await fetch(`${API_BASE}/colleges/details/${code}`, {
         headers
       });
-      if (!res.ok) throw new Error(`Details request failed: ${res.status}`);
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        console.error(`Details fetch failed for code ${code}: HTTP ${res.status}`, errBody);
+        throw new Error(`Details request failed: ${res.status}`);
+      }
       const json = await res.json();
       const rows = json?.data || [];
+      // ALERT FOR DEBUGGING
+      if (rows.length === 0) {
+        alert(`DEBUG: API returned 0 rows for college ${code}. Res.ok=${res.ok}, Status=${res.status}`);
+      }
       const grouped = groupRawRows(rows);
-      const one = grouped[code];
+      // Handle college_code leading-zero mismatch between catalog and DB rows
+      // (e.g. catalog gives "01" but cutoff_data stores "1" — normalise and fallback)
+      const normCode = String(code).replace(/^0+/, '') || String(code);
+      const one = grouped[code] || grouped[normCode] || Object.values(grouped)[0];
       if (!one) {
         const empty = { departments: [], rawRows: [], minCutoff: '—' };
         setDetailsByCode((prev) => ({ ...prev, [code]: empty }));
@@ -317,6 +328,7 @@ const CollegeSearch = () => {
       return finalDetails;
     } catch (e) {
       console.error('Failed to fetch college details:', e);
+      alert(`DEBUG: Fetch Error for ${code}: ${e.message}`);
       return null;
     }
   };
